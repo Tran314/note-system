@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -22,14 +22,12 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { debounce } from '../utils/format';
-// import { useNoteExport } from '../hooks/useNoteExport'; // 导出功能可按需使用
 
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentNote, fetchNote, createNote, updateNote, loading } = useNoteStore();
-  
+
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -38,10 +36,10 @@ function NoteEditor() {
   const [linkUrl, setLinkUrl] = useState('');
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
-  
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isNewNote = id === 'new';
 
-  // TipTap 编辑器
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -70,44 +68,44 @@ function NoteEditor() {
     content: '',
     onUpdate: () => {
       setHasUnsavedChanges(true);
-      triggerAutoSave();
+      scheduleAutoSave();
     },
   });
 
-  // 加载笔记数据
   useEffect(() => {
     if (!isNewNote && id) {
       fetchNote(id);
     }
-  }, [id, isNewNote]);
+  }, [id, isNewNote, fetchNote]);
 
-  // 同步编辑器内容
   useEffect(() => {
     if (currentNote && editor) {
       setTitle(currentNote.title);
       editor.commands.setContent(currentNote.content || '');
       setLastSaved(new Date(currentNote.updatedAt));
+      setHasUnsavedChanges(false);
     }
   }, [currentNote, editor]);
 
-  // 自动保存逻辑
-  const triggerAutoSave = useCallback(
-    debounce(() => {
-      if (title.trim() || editor?.getText().trim()) {
-        handleSave(true);
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
       }
-    }, 2000),
-    [title, editor, id]
-  );
+    };
+  }, []);
 
-  // 手动保存
   const handleSave = async (isAutoSave = false) => {
     if (!title.trim() && !editor?.getText().trim()) {
-      if (!isAutoSave) alert('请输入标题或内容');
+      if (!isAutoSave) {
+        alert('请输入标题或内容');
+      }
       return;
     }
 
-    if (!isAutoSave) setSaving(true);
+    if (!isAutoSave) {
+      setSaving(true);
+    }
 
     const content = editor?.getHTML() || '';
 
@@ -116,7 +114,6 @@ function NoteEditor() {
         const newNote = await createNote({ title, content });
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
-        // 更新 URL
         navigate(`/notes/${newNote.id}`, { replace: true });
       } else {
         await updateNote(id!, { title, content });
@@ -124,13 +121,28 @@ function NoteEditor() {
         setHasUnsavedChanges(false);
       }
     } catch (error) {
-      if (!isAutoSave) alert('保存失败');
+      if (!isAutoSave) {
+        alert('保存失败');
+      }
     } finally {
-      if (!isAutoSave) setSaving(false);
+      if (!isAutoSave) {
+        setSaving(false);
+      }
     }
   };
 
-  // 键盘快捷键
+  const scheduleAutoSave = () => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (title.trim() || editor?.getText().trim()) {
+        void handleSave(true);
+      }
+    }, 2000);
+  };
+
   useKeyboardShortcuts([
     {
       key: 's',
@@ -166,7 +178,6 @@ function NoteEditor() {
     },
   ]);
 
-  // 离开页面提醒
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -179,7 +190,6 @@ function NoteEditor() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // 工具栏配置
   const toolbarItems = [
     { icon: Bold, action: () => editor?.chain().focus().toggleBold().run(), title: '加粗', active: editor?.isActive('bold') },
     { icon: Italic, action: () => editor?.chain().focus().toggleItalic().run(), title: '斜体', active: editor?.isActive('italic') },
@@ -191,7 +201,6 @@ function NoteEditor() {
     { icon: ImageIcon, action: () => setShowImageDialog(true), title: '图片', active: false },
   ];
 
-  // 添加链接
   const handleAddLink = () => {
     if (linkUrl) {
       editor?.chain().focus().setLink({ href: linkUrl }).run();
@@ -200,7 +209,6 @@ function NoteEditor() {
     setLinkUrl('');
   };
 
-  // 添加图片
   const handleAddImage = () => {
     if (imageUrl) {
       editor?.chain().focus().setImage({ src: imageUrl }).run();
@@ -209,7 +217,6 @@ function NoteEditor() {
     setImageUrl('');
   };
 
-  // 粘贴图片处理
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -220,8 +227,6 @@ function NoteEditor() {
           e.preventDefault();
           const file = item.getAsFile();
           if (file) {
-            // TODO: 上传图片到服务器
-            // 临时方案：创建本地预览
             const reader = new FileReader();
             reader.onload = () => {
               editor?.chain().focus().setImage({ src: reader.result as string }).run();
@@ -237,22 +242,21 @@ function NoteEditor() {
   }, [editor]);
 
   if (loading && !isNewNote) {
-    return <div className="flex items-center justify-center h-full">加载中...</div>;
+    return <div className="flex h-full items-center justify-center">加载中...</div>;
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* 顶部工具栏 */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-200 sticky top-0 bg-white z-10">
+    <div className="flex h-full flex-col bg-white">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white p-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 rounded"
+            className="rounded p-2 hover:bg-gray-100"
             title="返回"
           >
             <ArrowLeft size={20} />
           </button>
-          
+
           <div className="text-sm text-gray-500">
             {hasUnsavedChanges ? (
               <span className="text-orange-500">未保存</span>
@@ -266,39 +270,33 @@ function NoteEditor() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            loading={saving}
-          >
+          <Button onClick={() => handleSave(false)} disabled={saving} loading={saving}>
             <Save size={16} />
             保存
           </Button>
         </div>
       </div>
 
-      {/* 标题输入 */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="border-b border-gray-200 p-4">
         <input
           type="text"
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
             setHasUnsavedChanges(true);
-            triggerAutoSave();
+            scheduleAutoSave();
           }}
           placeholder="笔记标题"
           className="w-full text-2xl font-bold outline-none"
         />
       </div>
 
-      {/* 编辑器工具栏 */}
-      <div className="flex items-center gap-1 p-2 border-b border-gray-200 flex-wrap sticky top-[60px] bg-white z-10">
+      <div className="sticky top-[60px] z-10 flex flex-wrap items-center gap-1 border-b border-gray-200 bg-white p-2">
         {toolbarItems.map(({ icon: Icon, action, title, active }, index) => (
           <button
             key={index}
             onClick={action}
-            className={`p-2 rounded transition-colors ${
+            className={`rounded p-2 transition-colors ${
               active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
             }`}
             title={title}
@@ -308,19 +306,17 @@ function NoteEditor() {
         ))}
       </div>
 
-      {/* 编辑器内容区 */}
       <div className="flex-1 overflow-auto">
         <EditorContent
           editor={editor}
-          className="prose prose-sm max-w-none p-4 min-h-[400px]"
+          className="prose prose-sm min-h-[400px] max-w-none p-4"
         />
       </div>
 
-      {/* 链接弹窗 */}
       {showLinkDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 w-96">
-            <h3 className="font-medium mb-3">添加链接</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-96 rounded-lg bg-white p-4">
+            <h3 className="mb-3 font-medium">添加链接</h3>
             <input
               type="url"
               value={linkUrl}
@@ -339,11 +335,10 @@ function NoteEditor() {
         </div>
       )}
 
-      {/* 图片弹窗 */}
       {showImageDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 w-96">
-            <h3 className="font-medium mb-3">添加图片</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-96 rounded-lg bg-white p-4">
+            <h3 className="mb-3 font-medium">添加图片</h3>
             <input
               type="url"
               value={imageUrl}
@@ -352,9 +347,7 @@ function NoteEditor() {
               className="input-field mb-3"
               autoFocus
             />
-            <p className="text-sm text-gray-500 mb-3">
-              或直接粘贴图片（Ctrl/Cmd + V）
-            </p>
+            <p className="mb-3 text-sm text-gray-500">或直接粘贴图片（Ctrl/Cmd + V）</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setShowImageDialog(false)}>
                 取消

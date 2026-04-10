@@ -1,10 +1,21 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useDeferredValue, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
 import { useFolderStore } from '../store/folder.store';
 import { useTagStore } from '../store/tag.store';
-import { FileText, Pin, Trash2, Clock, Folder, Tag, Plus, Search, Grid, List } from 'lucide-react';
-import { timeAgo, truncate, debounce } from '../utils/format';
+import {
+  FileText,
+  Pin,
+  Trash2,
+  Clock,
+  Folder,
+  Tag,
+  Plus,
+  Search,
+  Grid,
+  List,
+} from 'lucide-react';
+import { timeAgo, truncate } from '../utils/format';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { Note } from '../types/note.types';
@@ -14,30 +25,25 @@ function NoteList() {
   const { notes, loading, fetchNotes, deleteNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { tags, fetchTags } = useTagStore();
-  
-  const [keyword, setKeyword] = useState('');
+
+  const [keywordInput, setKeywordInput] = useState('');
+  const deferredKeyword = useDeferredValue(keywordInput.trim());
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // 初始加载数据
   useEffect(() => {
-    fetchNotes({ keyword, folderId: selectedFolder || undefined, tagId: selectedTag || undefined });
     fetchFolders();
     fetchTags();
-  }, [keyword, selectedFolder, selectedTag]);
+  }, [fetchFolders, fetchTags]);
 
-  // 防抖搜索
-  const debouncedSearch = useCallback(
-    debounce((value: string) => {
-      setKeyword(value);
-    }, 300),
-    []
-  );
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    debouncedSearch(e.target.value);
-  };
+  useEffect(() => {
+    fetchNotes({
+      keyword: deferredKeyword || undefined,
+      folderId: selectedFolder || undefined,
+      tagId: selectedTag || undefined,
+    });
+  }, [deferredKeyword, selectedFolder, selectedTag, fetchNotes]);
 
   const handleDelete = async (noteId: string) => {
     if (confirm('确定要删除此笔记吗？')) {
@@ -55,21 +61,19 @@ function NoteList() {
       onClick={() => navigate(`/notes/${note.id}`)}
       className={`note-item group ${viewMode === 'grid' ? 'rounded-lg border hover:shadow-md' : ''}`}
     >
-      {/* 标题行 */}
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {note.isPinned && <Pin size={14} className="text-blue-600 shrink-0" />}
-          <h3 className="font-medium truncate">{note.title}</h3>
+      <div className="mb-2 flex items-start justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {note.isPinned && <Pin size={14} className="shrink-0 text-blue-600" />}
+          <h3 className="truncate font-medium">{note.title}</h3>
         </div>
-        
-        {/* 操作按钮 */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleDelete(note.id);
             }}
-            className="p-1 hover:bg-red-50 rounded text-red-500"
+            className="rounded p-1 text-red-500 hover:bg-red-50"
             title="删除"
           >
             <Trash2 size={14} />
@@ -77,18 +81,16 @@ function NoteList() {
         </div>
       </div>
 
-      {/* 内容预览 */}
-      <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+      <p className="mb-3 line-clamp-2 text-sm text-gray-500">
         {truncate(note.content?.replace(/<[^>]*>/g, '') || '无内容', 100)}
       </p>
 
-      {/* 元信息 */}
-      <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
         <span className="flex items-center gap-1">
           <Clock size={12} />
           {timeAgo(note.updatedAt)}
         </span>
-        
+
         {note.folder && (
           <button
             onClick={(e) => {
@@ -101,7 +103,7 @@ function NoteList() {
             {note.folder.name}
           </button>
         )}
-        
+
         {note.tags && note.tags.length > 0 && (
           <div className="flex items-center gap-1">
             <Tag size={12} />
@@ -112,7 +114,7 @@ function NoteList() {
                   e.stopPropagation();
                   setSelectedTag(nt.tagId);
                 }}
-                className="px-1.5 py-0.5 rounded text-white hover:opacity-80 transition-opacity"
+                className="rounded px-1.5 py-0.5 text-white transition-opacity hover:opacity-80"
                 style={{ backgroundColor: nt.tag?.color || '#6B7280' }}
               >
                 {nt.tag?.name}
@@ -128,21 +130,19 @@ function NoteList() {
   );
 
   return (
-    <div className="h-full flex flex-col">
-      {/* 顶部工具栏 */}
-      <div className="p-4 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-3 mb-3">
-          {/* 搜索框 */}
+    <div className="flex h-full flex-col">
+      <div className="border-b border-gray-200 bg-white p-4">
+        <div className="mb-3 flex items-center gap-3">
           <div className="flex-1">
             <Input
               placeholder="搜索笔记..."
-              onChange={handleSearch}
+              value={keywordInput}
+              onChange={(e) => setKeywordInput(e.target.value)}
               icon={<Search size={18} />}
             />
           </div>
-          
-          {/* 视图切换 */}
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+
+          <div className="flex overflow-hidden rounded-lg border border-gray-200">
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-500'}`}
@@ -158,40 +158,47 @@ function NoteList() {
               <Grid size={18} />
             </button>
           </div>
-          
-          {/* 新建按钮 */}
+
           <Button onClick={handleCreateNote}>
             <Plus size={18} />
             新建笔记
           </Button>
         </div>
 
-        {/* 筛选标签 */}
         {(selectedFolder || selectedTag) && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">筛选：</span>
             {selectedFolder && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-                {folders.find(f => f.id === selectedFolder)?.name}
-                <button onClick={() => setSelectedFolder(null)} className="hover:text-blue-900">×</button>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-sm text-blue-700">
+                {folders.find((f) => f.id === selectedFolder)?.name}
+                <button
+                  onClick={() => setSelectedFolder(null)}
+                  className="hover:text-blue-900"
+                >
+                  ×
+                </button>
               </span>
             )}
             {selectedTag && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                {tags.find(t => t.id === selectedTag)?.name}
-                <button onClick={() => setSelectedTag(null)} className="hover:text-gray-900">×</button>
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-sm text-gray-700">
+                {tags.find((t) => t.id === selectedTag)?.name}
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className="hover:text-gray-900"
+                >
+                  ×
+                </button>
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* 笔记列表 */}
       <div className="flex-1 overflow-auto p-4">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">加载中...</div>
+          <div className="py-8 text-center text-gray-500">加载中...</div>
         ) : notes.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="py-12 text-center text-gray-400">
             <FileText size={48} className="mx-auto mb-3 opacity-50" />
             <p className="mb-2">暂无笔记</p>
             <Button variant="ghost" onClick={handleCreateNote}>
@@ -200,7 +207,7 @@ function NoteList() {
             </Button>
           </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-2 lg:grid-cols-3 gap-4' : ''}>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4 lg:grid-cols-3' : ''}>
             {notes.map(renderNoteItem)}
           </div>
         )}

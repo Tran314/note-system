@@ -1,64 +1,106 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, RedisClientType } from 'redis';
 
+type MemoryEntry = {
+  value: string;
+  expiresAt?: number;
+};
+
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client: RedisClientType;
+  private client: RedisClientType | null = null;
+  private readonly memoryStore = new Map<string, MemoryEntry>();
+  private useMemoryStore = false;
 
   constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
+    const redisDisabled =
+      this.configService.get<string>('REDIS_DISABLED', 'false') === 'true';
+
+    if (redisDisabled) {
+      this.useMemoryStore = true;
+      console.log('Redis disabled, using in-memory cache for personal mode');
+      return;
+    }
+
     const host = this.configService.get<string>('REDIS_HOST', 'localhost');
     const port = this.configService.get<number>('REDIS_PORT', 6379);
-    const password = this.configService.get<string>('REDIS_PASSWORD');
 
     this.client = createClient({
       url: `redis://${host}:${port}`,
     });
 
-    this.client.on('error', (err) => console.error('Redis Client Error:', err));
-    this.client.on('connect', () => console.log('✅ Redis 连接成功'));
+    this.client.on('error', (err) => {
+      console.warn('Redis unavailable, falling back to in-memory cache:', err);
+      this.useMemoryStore = true;
+    });
 
-    await this.client.connect();
-  }
-
-  async onModuleDestroy() {
-    await this.client.quit();
-    console.log('🔌 Redis 连接已断开');
-  }
-
-  // 检查连接
-  async ping(): Promise<string> {
-    return this.client.ping();
-  }
-
-  // 获取值
-  async get(key: string): Promise<string | null> {
-    return this.client.get(key);
-  }
-
-  // 设置值（带过期时间）
-  async set(key: string, value: string, expiresIn?: number): Promise<void> {
-    if (expiresIn) {
-      await this.client.setEx(key, expiresIn, value);
-    } else {
-      await this.client.set(key, value);
+    try {
+      await this.client.connect();
+      console.log('Redis connected');
+    } catch (error) {
+      this.useMemoryStore = true;
+      this.client = null;
+      console.warn('Redis connect failed, using in-memory cache:', error);
     }
   }
 
-  // 删除值
+  async onModuleDestroy() {
+    if (this.client?.isOpen) {
+      await this.client.quit();
+    }
+  }
+
+  async ping(): Promise<string> {
+    if (this.useMemoryStore || !this.client) {
+      return 'PONG';
+    }
+
+    return this.client.ping();
+  }
+
+  async get(key: string): Promise<string | null> {
+    if (this.useMemoryStore || !this.client) {
+      return this.getMemoryValue(key);
+    }
+
+    return this.client.get(key);
+  }
+
+  async set(key: string, value: string, expiresIn?: number): Promise<void> {
+    if (this.useMemoryStore || !this.client) {
+      this.setMemoryValue(key, value, expiresIn);
+      return;
+    }
+
+    if (expiresIn) {
+      await this.client.setEx(key, expiresIn, value);
+      return;
+    }
+
+    await this.client.set(key, value);
+  }
+
   async del(key: string): Promise<void> {
+    if (this.useMemoryStore || !this.client) {
+      this.memoryStore.delete(key);
+      return;
+    }
+
     await this.client.del(key);
   }
 
-  // 检查是否存在
   async exists(key: string): Promise<boolean> {
+    if (this.useMemoryStore || !this.client) {
+      return this.getMemoryValue(key) !== null;
+    }
+
     const result = await this.client.exists(key);
     return result === 1;
   }
 
-  // Token 黑名单操作
   async addToBlacklist(jti: string, expiresIn: number): Promise<void> {
     await this.set(`blacklist:${jti}`, '1', expiresIn);
   }
@@ -67,8 +109,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.exists(`blacklist:${jti}`);
   }
 
-  // 用户会话缓存
-  async cacheUserSession(userId: string, data: object, expiresIn: number): Promise<void> {
+  async cacheUserSession(
+    userId: string,
+    data: object,
+    expiresIn: number,
+  ): Promise<void> {
     await this.set(`session:${userId}`, JSON.stringify(data), expiresIn);
   }
 
@@ -79,5 +124,26 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async clearUserSession(userId: string): Promise<void> {
     await this.del(`session:${userId}`);
+  }
+
+  private getMemoryValue(key: string): string | null {
+    const entry = this.memoryStore.get(key);
+    if (!entry) {
+      return null;
+    }
+
+    if (entry.expiresAt && entry.expiresAt <= Date.now()) {
+      this.memoryStore.delete(key);
+      return null;
+    }
+
+    return entry.value;
+  }
+
+  private setMemoryValue(key: string, value: string, expiresIn?: number) {
+    this.memoryStore.set(key, {
+      value,
+      expiresAt: expiresIn ? Date.now() + expiresIn * 1000 : undefined,
+    });
   }
 }
