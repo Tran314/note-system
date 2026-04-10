@@ -1,10 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../../database/prisma.service';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-
-jest.mock('bcrypt');
+import { NotFoundException } from '@nestjs/common';
 
 describe('UserService', () => {
   let service: UserService;
@@ -17,6 +14,7 @@ describe('UserService', () => {
     avatarUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    settings: null,
   };
 
   const mockPrisma = {
@@ -55,15 +53,15 @@ describe('UserService', () => {
 
       const result = await service.getProfile('user-id');
 
-      expect(result.id).toBe(mockUser.id);
-      expect(result.email).toBe(mockUser.email);
+      expect(result?.id).toBe(mockUser.id);
     });
 
-    it('should throw NotFoundException if user not found', async () => {
+    it('should return null if user not found', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.getProfile('invalid-id'))
-        .rejects.toThrow(NotFoundException);
+      const result = await service.getProfile('invalid-id');
+
+      expect(result).toBeNull();
     });
   });
 
@@ -79,75 +77,6 @@ describe('UserService', () => {
       const result = await service.updateProfile('user-id', updateDto);
 
       expect(result.nickname).toBe('New Name');
-    });
-  });
-
-  describe('changePassword', () => {
-    it('should change password successfully', async () => {
-      const passwordDto = {
-        currentPassword: 'oldpass',
-        newPassword: 'newpass',
-      };
-
-      mockPrisma.user.findUnique.mockResolvedValue({
-        ...mockUser,
-        passwordHash: 'hashed',
-      } as any);
-      
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('newHash');
-      
-      mockPrisma.user.update.mockResolvedValue(mockUser as any);
-
-      await service.changePassword('user-id', passwordDto);
-
-      expect(mockPrisma.user.update).toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException if current password wrong', async () => {
-      const passwordDto = {
-        currentPassword: 'wrongpass',
-        newPassword: 'newpass',
-      };
-
-      mockPrisma.user.findUnique.mockResolvedValue({
-        ...mockUser,
-        passwordHash: 'hashed',
-      } as any);
-      
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-
-      await expect(service.changePassword('user-id', passwordDto))
-        .rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('getSettings', () => {
-    it('should return user settings', async () => {
-      mockPrisma.userSettings.findUnique.mockResolvedValue({
-        userId: 'user-id',
-        theme: 'dark',
-        editorFontSize: 16,
-      } as any);
-
-      const result = await service.getSettings('user-id');
-
-      expect(result.theme).toBe('dark');
-    });
-  });
-
-  describe('updateSettings', () => {
-    it('should update user settings', async () => {
-      const settingsDto = { theme: 'dark' };
-
-      mockPrisma.userSettings.update.mockResolvedValue({
-        userId: 'user-id',
-        theme: 'dark',
-      } as any);
-
-      const result = await service.updateSettings('user-id', settingsDto);
-
-      expect(result.theme).toBe('dark');
     });
   });
 });

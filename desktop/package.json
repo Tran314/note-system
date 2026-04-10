@@ -6,7 +6,7 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "dev": "npm run build:main && electron .",
+    "dev": "npm run build:main && electron . --enable-features=VaapiVideoDecoderLib",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "cd ../frontend && npm run build",
     "build": "npm run build:main && npm run build:renderer",
@@ -15,7 +15,9 @@
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist release"
   },
   "dependencies": {
     "electron-log": "^5.0.1",

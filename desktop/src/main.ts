@@ -19,23 +19,53 @@ let backendProcess: ChildProcess | null = null;
 // 是否为开发环境
 const isDev = process.env.NODE_ENV === 'development';
 
-// 创建主窗口
+// 性能优化：禁用 GPU 加速（某些系统上更稳定）
+app.disableHardwareAcceleration();
+
+// 性能优化：设置 V8 标志
+app.commandLine.appendSwitch('--js-flags', '--max-old-space-size=4096');
+app.commandLine.appendSwitch('--enable-features', 'VaapiVideoDecoderLib');
+
+// 创建主窗口（性能优化版本）
 function createMainWindow(): BrowserWindow {
+  // 获取上次窗口大小
+  const lastSize = store.get('window.size', { width: 1400, height: 900 });
+  const lastPosition = store.get('window.position', { x: undefined, y: undefined });
+
   const window = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: lastSize.width,
+    height: lastSize.height,
     minWidth: 1000,
     minHeight: 600,
+    x: lastPosition.x,
+    y: lastPosition.y,
     title: 'Nebula',
     icon: path.join(__dirname, '../build/icon.png'),
+    
+    // 性能优化配置
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: !isDev,
+      
+      // 性能优化
+      spellcheck: false, // 禁用拼写检查
+      enableWebSQL: false, // 禁用 WebSQL
+      backgroundThrottling: true, // 后台节流
+      
+      // 缓存优化
+      partition: 'persist:nebula', // 使用独立分区以持久化缓存
     },
+    
+    // 窗口优化
     titleBarStyle: 'hiddenInset',
-    show: false,
+    show: false, // 先隐藏，准备好再显示
+    backgroundColor: '#ffffff', // 设置背景色避免闪烁
+    
+    // 性能优化：减少动画
+    frame: process.platform === 'darwin', // macOS 使用原生框架
+    transparent: false,
   });
 
   // 加载前端页面
@@ -46,7 +76,7 @@ function createMainWindow(): BrowserWindow {
     window.loadFile(path.join(__dirname, '../../frontend/dist/index.html'));
   }
 
-  // 窗口准备好后显示
+  // 性能优化：延迟显示窗口
   window.once('ready-to-show', () => {
     window.show();
     
@@ -62,10 +92,21 @@ function createMainWindow(): BrowserWindow {
     return { action: 'deny' };
   });
 
+  // 性能优化：保存窗口状态
+  window.on('resize', () => {
+    const [width, height] = window.getSize();
+    store.set('window.size', { width, height });
+  });
+
+  window.on('move', () => {
+    const [x, y] = window.getPosition();
+    store.set('window.position', { x, y });
+  });
+
   return window;
 }
 
-// 启动后端服务
+// 启动后端服务（性能优化版本）
 function startBackend(): void {
   if (isDev) {
     log.info('Development mode: using external backend');
@@ -76,13 +117,17 @@ function startBackend(): void {
   
   log.info('Starting backend server...');
   
+  // 性能优化：使用 detached 模式
   backendProcess = spawn('node', ['dist/main.js'], {
     cwd: backendPath,
+    detached: false, // 保持连接以便正确关闭
+    stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
       NODE_ENV: 'production',
       PORT: '3001',
       DATABASE_URL: `file:${path.join(app.getPath('userData'), 'notes.db')}`,
+      UV_THREADPOOL_SIZE: '4', // 优化 Node.js 线程池
     },
   });
 
@@ -103,14 +148,17 @@ function startBackend(): void {
 function stopBackend(): void {
   if (backendProcess) {
     log.info('Stopping backend server...');
-    backendProcess.kill();
+    backendProcess.kill('SIGTERM'); // 使用 SIGTERM 更优雅
     backendProcess = null;
   }
 }
 
 // 应用准备就绪
 app.whenReady().then(() => {
+  // 启动后端
   startBackend();
+  
+  // 创建主窗口
   mainWindow = createMainWindow();
 
   app.on('activate', () => {
