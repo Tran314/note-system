@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -19,14 +19,22 @@ import {
   Save,
   ArrowLeft,
   Check,
+  History,
+  Paperclip,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { noteService } from '../services/note.service';
+import { attachmentService } from '../services/attachment.service';
+import { Attachment, NoteVersion } from '../types/note.types';
 
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentNote, fetchNote, createNote, updateNote, loading } = useNoteStore();
+  const { notes, currentNote, fetchNote, prefetchNote, createNote, updateNote, loading } =
+    useNoteStore();
 
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
@@ -36,9 +44,19 @@ function NoteEditor() {
   const [linkUrl, setLinkUrl] = useState('');
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [versions, setVersions] = useState<NoteVersion[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [versionsLoaded, setVersionsLoaded] = useState(false);
+  const [attachmentsLoaded, setAttachmentsLoaded] = useState(false);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isNewNote = id === 'new';
+
+  const currentIndex = useMemo(() => notes.findIndex((note) => note.id === id), [notes, id]);
+  const previousNote = currentIndex > 0 ? notes[currentIndex - 1] : null;
+  const nextNote = currentIndex >= 0 && currentIndex < notes.length - 1 ? notes[currentIndex + 1] : null;
 
   const editor = useEditor({
     extensions: [
@@ -79,11 +97,28 @@ function NoteEditor() {
   }, [id, isNewNote, fetchNote]);
 
   useEffect(() => {
+    if (!id || isNewNote) {
+      return;
+    }
+
+    if (previousNote) {
+      void prefetchNote(previousNote.id);
+    }
+    if (nextNote) {
+      void prefetchNote(nextNote.id);
+    }
+  }, [id, isNewNote, previousNote, nextNote, prefetchNote]);
+
+  useEffect(() => {
     if (currentNote && editor) {
       setTitle(currentNote.title);
       editor.commands.setContent(currentNote.content || '');
       setLastSaved(new Date(currentNote.updatedAt));
       setHasUnsavedChanges(false);
+      setVersions([]);
+      setAttachments([]);
+      setVersionsLoaded(false);
+      setAttachmentsLoaded(false);
     }
   }, [currentNote, editor]);
 
@@ -128,6 +163,36 @@ function NoteEditor() {
       if (!isAutoSave) {
         setSaving(false);
       }
+    }
+  };
+
+  const loadVersions = async () => {
+    if (!id || isNewNote || versionsLoaded || versionsLoading) {
+      return;
+    }
+
+    setVersionsLoading(true);
+    try {
+      const response = await noteService.getVersions(id);
+      setVersions(response.data.data ?? response.data);
+      setVersionsLoaded(true);
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
+
+  const loadAttachments = async () => {
+    if (!id || isNewNote || attachmentsLoaded || attachmentsLoading) {
+      return;
+    }
+
+    setAttachmentsLoading(true);
+    try {
+      const response = await attachmentService.getAttachments(id);
+      setAttachments(response.data.data ?? response.data);
+      setAttachmentsLoaded(true);
+    } finally {
+      setAttachmentsLoading(false);
     }
   };
 
@@ -246,72 +311,164 @@ function NoteEditor() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white p-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(-1)}
-            className="rounded p-2 hover:bg-gray-100"
-            title="返回"
-          >
-            <ArrowLeft size={20} />
-          </button>
+    <div className="flex h-full gap-4 bg-white">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white p-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(-1)}
+              className="rounded p-2 hover:bg-gray-100"
+              title="返回"
+            >
+              <ArrowLeft size={20} />
+            </button>
 
-          <div className="text-sm text-gray-500">
-            {hasUnsavedChanges ? (
-              <span className="text-orange-500">未保存</span>
-            ) : lastSaved ? (
-              <span className="flex items-center gap-1 text-green-600">
-                <Check size={14} />
-                已保存 {lastSaved.toLocaleTimeString()}
-              </span>
-            ) : null}
+            {previousNote && (
+              <button
+                onClick={() => navigate(`/notes/${previousNote.id}`)}
+                className="rounded p-2 hover:bg-gray-100"
+                title={`上一篇：${previousNote.title}`}
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+
+            {nextNote && (
+              <button
+                onClick={() => navigate(`/notes/${nextNote.id}`)}
+                className="rounded p-2 hover:bg-gray-100"
+                title={`下一篇：${nextNote.title}`}
+              >
+                <ChevronRight size={18} />
+              </button>
+            )}
+
+            <div className="text-sm text-gray-500">
+              {hasUnsavedChanges ? (
+                <span className="text-orange-500">未保存</span>
+              ) : lastSaved ? (
+                <span className="flex items-center gap-1 text-green-600">
+                  <Check size={14} />
+                  已保存 {lastSaved.toLocaleTimeString()}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button onClick={() => handleSave(false)} disabled={saving} loading={saving}>
+              <Save size={16} />
+              保存
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button onClick={() => handleSave(false)} disabled={saving} loading={saving}>
-            <Save size={16} />
-            保存
-          </Button>
+        <div className="border-b border-gray-200 p-4">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setHasUnsavedChanges(true);
+              scheduleAutoSave();
+            }}
+            placeholder="笔记标题"
+            className="w-full text-2xl font-bold outline-none"
+          />
+        </div>
+
+        <div className="sticky top-[60px] z-10 flex flex-wrap items-center gap-1 border-b border-gray-200 bg-white p-2">
+          {toolbarItems.map(({ icon: Icon, action, title, active }, index) => (
+            <button
+              key={index}
+              onClick={action}
+              className={`rounded p-2 transition-colors ${
+                active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+              }`}
+              title={title}
+            >
+              <Icon size={16} />
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          <EditorContent
+            editor={editor}
+            className="prose prose-sm min-h-[400px] max-w-none p-4"
+          />
         </div>
       </div>
 
-      <div className="border-b border-gray-200 p-4">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setHasUnsavedChanges(true);
-            scheduleAutoSave();
-          }}
-          placeholder="笔记标题"
-          className="w-full text-2xl font-bold outline-none"
-        />
-      </div>
+      {!isNewNote && id && (
+        <aside className="w-80 shrink-0 border-l border-gray-200 bg-gray-50 p-4">
+          <div className="space-y-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <button
+                onClick={() => void loadVersions()}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <History size={16} />
+                  历史版本
+                </span>
+                <span className="text-sm text-gray-500">
+                  {versionsLoaded ? `${versions.length} 条` : '点击加载'}
+                </span>
+              </button>
+              {versionsLoading && <p className="mt-3 text-sm text-gray-500">加载中...</p>}
+              {versionsLoaded && (
+                <div className="mt-3 space-y-2">
+                  {versions.length === 0 ? (
+                    <p className="text-sm text-gray-500">暂无版本记录</p>
+                  ) : (
+                    versions.map((version) => (
+                      <div key={version.id} className="rounded border border-gray-100 bg-gray-50 p-2">
+                        <div className="text-sm font-medium">v{version.version}</div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(version.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
 
-      <div className="sticky top-[60px] z-10 flex flex-wrap items-center gap-1 border-b border-gray-200 bg-white p-2">
-        {toolbarItems.map(({ icon: Icon, action, title, active }, index) => (
-          <button
-            key={index}
-            onClick={action}
-            className={`rounded p-2 transition-colors ${
-              active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
-            }`}
-            title={title}
-          >
-            <Icon size={16} />
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-auto">
-        <EditorContent
-          editor={editor}
-          className="prose prose-sm min-h-[400px] max-w-none p-4"
-        />
-      </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <button
+                onClick={() => void loadAttachments()}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <Paperclip size={16} />
+                  附件
+                </span>
+                <span className="text-sm text-gray-500">
+                  {attachmentsLoaded ? `${attachments.length} 个` : '点击加载'}
+                </span>
+              </button>
+              {attachmentsLoading && <p className="mt-3 text-sm text-gray-500">加载中...</p>}
+              {attachmentsLoaded && (
+                <div className="mt-3 space-y-2">
+                  {attachments.length === 0 ? (
+                    <p className="text-sm text-gray-500">暂无附件</p>
+                  ) : (
+                    attachments.map((attachment) => (
+                      <div key={attachment.id} className="rounded border border-gray-100 bg-gray-50 p-2">
+                        <div className="truncate text-sm font-medium">{attachment.filename}</div>
+                        <div className="text-xs text-gray-500">
+                          {(attachment.fileSize / 1024).toFixed(1)} KB
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+      )}
 
       {showLinkDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

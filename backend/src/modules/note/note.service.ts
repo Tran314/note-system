@@ -138,11 +138,6 @@ export class NoteService {
       include: {
         folder: true,
         tags: { include: { tag: true } },
-        versions: {
-          orderBy: { version: 'desc' },
-          take: 10,
-        },
-        attachments: true,
       },
     });
 
