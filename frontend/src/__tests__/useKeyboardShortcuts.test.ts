@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // 简化测试 - useKeyboardShortcuts 需要实际 DOM 环境
 describe('useKeyboardShortcuts', () => {
