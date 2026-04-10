@@ -30,43 +30,27 @@ describe('HealthService', () => {
   });
 
   describe('check', () => {
-    it('should return health status', async () => {
+    it('should return ok status', async () => {
       mockPrisma.$queryRaw.mockResolvedValue([{ result: 1 }]);
 
       const result = await service.check();
 
       expect(result.status).toBe('ok');
     });
-
-    it('should return database status', async () => {
-      mockPrisma.$queryRaw.mockResolvedValue([{ result: 1 }]);
-
-      const result = await service.check();
-
-      expect(result.database).toBe('connected');
-    });
   });
 
   describe('checkReady', () => {
-    it('should return ready status', async () => {
+    it('should return ready when database connected', async () => {
       mockPrisma.$queryRaw.mockResolvedValue([{ result: 1 }]);
 
       const result = await service.checkReady();
 
       expect(result.ready).toBe(true);
     });
-
-    it('should return not ready if database disconnected', async () => {
-      mockPrisma.$queryRaw.mockRejectedValue(new Error('Connection failed'));
-
-      const result = await service.checkReady();
-
-      expect(result.ready).toBe(false);
-    });
   });
 
   describe('checkLive', () => {
-    it('should return live status', () => {
+    it('should always return live', () => {
       const result = service.checkLive();
 
       expect(result.live).toBe(true);

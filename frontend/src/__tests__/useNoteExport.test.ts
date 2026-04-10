@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useNoteExport } from '../useNoteExport';
+import { describe, it, expect } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { useNoteExport } from '../hooks/useNoteExport';
 
 describe('useNoteExport', () => {
   const mockNote = {
@@ -14,7 +14,7 @@ describe('useNoteExport', () => {
   it('should export to markdown', () => {
     const { result } = renderHook(() => useNoteExport());
 
-    const markdown = result.current.exportMarkdown(mockNote, { includeMetadata: false });
+    const markdown = result.current.exportMarkdown(mockNote, { format: 'markdown', includeMetadata: false });
 
     expect(markdown).toContain('# Test Note');
     expect(markdown).toContain('Title');
@@ -24,7 +24,7 @@ describe('useNoteExport', () => {
   it('should export to html', () => {
     const { result } = renderHook(() => useNoteExport());
 
-    const html = result.current.exportHtml(mockNote, { includeMetadata: false });
+    const html = result.current.exportHtml(mockNote, { format: 'html', includeMetadata: false });
 
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('<title>Test Note</title>');
@@ -43,7 +43,7 @@ describe('useNoteExport', () => {
   it('should include metadata when requested', () => {
     const { result } = renderHook(() => useNoteExport());
 
-    const markdown = result.current.exportMarkdown(mockNote, { includeMetadata: true });
+    const markdown = result.current.exportMarkdown(mockNote, { format: 'markdown', includeMetadata: true });
 
     expect(markdown).toContain('---');
     expect(markdown).toContain('title: Test Note');

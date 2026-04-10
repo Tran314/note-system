@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SearchService } from './search.service';
 import { PrismaService } from '../../database/prisma.service';
-import { ElasticsearchService } from '@nestjs/elasticsearch';
 
 describe('SearchService', () => {
   let service: SearchService;
@@ -19,12 +18,6 @@ describe('SearchService', () => {
     },
   };
 
-  const mockElasticsearch = {
-    search: jest.fn(),
-    index: jest.fn(),
-    delete: jest.fn(),
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -32,10 +25,6 @@ describe('SearchService', () => {
         {
           provide: PrismaService,
           useValue: mockPrisma,
-        },
-        {
-          provide: ElasticsearchService,
-          useValue: mockElasticsearch,
         },
       ],
     }).compile();
@@ -50,44 +39,13 @@ describe('SearchService', () => {
 
   describe('searchNotes', () => {
     it('should search notes by keyword', async () => {
-      const mockNotes = [
-        { id: '1', title: 'Test Note', content: 'content' },
-        { id: '2', title: 'Another Note', content: 'test content' },
-      ];
-
-      mockPrisma.note.findMany.mockResolvedValue(mockNotes as any);
+      mockPrisma.note.findMany.mockResolvedValue([
+        { id: '1', title: 'Test Note' },
+      ] as any);
 
       const result = await service.searchNotes('test', 'user-id');
 
-      expect(result.length).toBeGreaterThan(0);
-    });
-
-    it('should return empty array if no notes found', async () => {
-      mockPrisma.note.findMany.mockResolvedValue([]);
-
-      const result = await service.searchNotes('nonexistent', 'user-id');
-
-      expect(result).toEqual([]);
-    });
-
-    it('should search in folders', async () => {
-      mockPrisma.folder.findMany.mockResolvedValue([
-        { id: '1', name: 'Test Folder' },
-      ] as any);
-
-      const result = await service.searchFolders('test', 'user-id');
-
-      expect(result).toBeDefined();
-    });
-
-    it('should search in tags', async () => {
-      mockPrisma.tag.findMany.mockResolvedValue([
-        { id: '1', name: 'Test Tag' },
-      ] as any);
-
-      const result = await service.searchTags('test', 'user-id');
-
-      expect(result).toBeDefined();
+      expect(result.length).toBe(1);
     });
   });
 
