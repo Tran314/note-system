@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Button from '../components/common/Button';
+import { Button } from '../components/common/Button';
 
 describe('Button Component', () => {
   it('should render with default props', () => {

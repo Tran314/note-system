@@ -21,6 +21,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { debounce } from '../utils/format';
 
 function NoteEditor() {
@@ -127,6 +128,42 @@ function NoteEditor() {
       if (!isAutoSave) setSaving(false);
     }
   };
+
+  // 键盘快捷键
+  useKeyboardShortcuts([
+    {
+      key: 's',
+      ctrl: true,
+      action: () => handleSave(false),
+      description: '保存笔记',
+    },
+    {
+      key: 'b',
+      ctrl: true,
+      action: () => editor?.chain().focus().toggleBold().run(),
+      description: '加粗',
+    },
+    {
+      key: 'i',
+      ctrl: true,
+      action: () => editor?.chain().focus().toggleItalic().run(),
+      description: '斜体',
+    },
+    {
+      key: 'k',
+      ctrl: true,
+      action: () => setShowLinkDialog(true),
+      description: '插入链接',
+    },
+    {
+      key: 'Escape',
+      action: () => {
+        if (showLinkDialog) setShowLinkDialog(false);
+        if (showImageDialog) setShowImageDialog(false);
+      },
+      description: '关闭弹窗',
+    },
+  ]);
 
   // 离开页面提醒
   useEffect(() => {
