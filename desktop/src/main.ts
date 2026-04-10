@@ -19,16 +19,78 @@ let backendProcess: ChildProcess | null = null;
 // 是否为开发环境
 const isDev = process.env.NODE_ENV === 'development';
 
-// 性能优化：禁用 GPU 加速（某些系统上更稳定）
+// 性能优化：禁用 GPU 加速
 app.disableHardwareAcceleration();
 
 // 性能优化：设置 V8 标志
 app.commandLine.appendSwitch('--js-flags', '--max-old-space-size=4096');
 app.commandLine.appendSwitch('--enable-features', 'VaapiVideoDecoderLib');
 
+// 主进程异步初始化（性能优化）
+async function initializeApp(): Promise<void> {
+  // 异步启动后端（不阻塞主窗口）
+  const backendPromise = startBackendAsync();
+  
+  // 先创建主窗口（用户可以立即看到界面）
+  mainWindow = createMainWindow();
+  
+  // 等待后端启动完成
+  await backendPromise;
+  
+  log.info('App initialized successfully');
+}
+
+// 异步启动后端服务（性能优化）
+function startBackendAsync(): Promise<void> {
+  return new Promise((resolve) => {
+    if (isDev) {
+      log.info('Development mode: using external backend');
+      resolve();
+      return;
+    }
+
+    const backendPath = path.join(process.resourcesPath, 'backend');
+    
+    log.info('Starting backend server asynchronously...');
+    
+    backendProcess = spawn('node', ['dist/main.js'], {
+      cwd: backendPath,
+      detached: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: '3001',
+        DATABASE_URL: `file:${path.join(app.getPath('userData'), 'notes.db')}`,
+        UV_THREADPOOL_SIZE: '4',
+      },
+    });
+
+    backendProcess.stdout?.on('data', (data) => {
+      const msg = data.toString();
+      log.info(`Backend: ${msg}`);
+      
+      // 检测后端就绪信号
+      if (msg.includes('Server started') || msg.includes('listening')) {
+        resolve();
+      }
+    });
+
+    backendProcess.stderr?.on('data', (data) => {
+      log.error(`Backend Error: ${data}`);
+    });
+
+    backendProcess.on('close', (code) => {
+      log.info(`Backend process exited with code ${code}`);
+    });
+
+    // 超时自动 resolve（避免无限等待）
+    setTimeout(resolve, 5000);
+  });
+}
+
 // 创建主窗口（性能优化版本）
 function createMainWindow(): BrowserWindow {
-  // 获取上次窗口大小
   const lastSize = store.get('window.size', { width: 1400, height: 900 });
   const lastPosition = store.get('window.position', { x: undefined, y: undefined });
 
@@ -42,7 +104,6 @@ function createMainWindow(): BrowserWindow {
     title: 'Nebula',
     icon: path.join(__dirname, '../build/icon.png'),
     
-    // 性能优化配置
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -50,21 +111,16 @@ function createMainWindow(): BrowserWindow {
       webSecurity: !isDev,
       
       // 性能优化
-      spellcheck: false, // 禁用拼写检查
-      enableWebSQL: false, // 禁用 WebSQL
-      backgroundThrottling: true, // 后台节流
-      
-      // 缓存优化
-      partition: 'persist:nebula', // 使用独立分区以持久化缓存
+      spellcheck: false,
+      enableWebSQL: false,
+      backgroundThrottling: true,
+      partition: 'persist:nebula',
     },
     
-    // 窗口优化
     titleBarStyle: 'hiddenInset',
-    show: false, // 先隐藏，准备好再显示
-    backgroundColor: '#ffffff', // 设置背景色避免闪烁
-    
-    // 性能优化：减少动画
-    frame: process.platform === 'darwin', // macOS 使用原生框架
+    show: false,
+    backgroundColor: '#ffffff',
+    frame: process.platform === 'darwin',
     transparent: false,
   });
 
@@ -76,23 +132,22 @@ function createMainWindow(): BrowserWindow {
     window.loadFile(path.join(__dirname, '../../frontend/dist/index.html'));
   }
 
-  // 性能优化：延迟显示窗口
+  // 延迟显示窗口
   window.once('ready-to-show', () => {
     window.show();
     
-    // 检查更新
     if (!isDev) {
       autoUpdater.checkForUpdatesAndNotify();
     }
   });
 
-  // 处理新窗口打开
+  // 处理新窗口
   window.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  // 性能优化：保存窗口状态
+  // 保存窗口状态
   window.on('resize', () => {
     const [width, height] = window.getSize();
     store.set('window.size', { width, height });
@@ -106,72 +161,20 @@ function createMainWindow(): BrowserWindow {
   return window;
 }
 
-// 启动后端服务（性能优化版本）
-function startBackend(): void {
-  if (isDev) {
-    log.info('Development mode: using external backend');
-    return;
-  }
-
-  const backendPath = path.join(process.resourcesPath, 'backend');
-  
-  log.info('Starting backend server...');
-  
-  // 性能优化：使用 detached 模式
-  backendProcess = spawn('node', ['dist/main.js'], {
-    cwd: backendPath,
-    detached: false, // 保持连接以便正确关闭
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      PORT: '3001',
-      DATABASE_URL: `file:${path.join(app.getPath('userData'), 'notes.db')}`,
-      UV_THREADPOOL_SIZE: '4', // 优化 Node.js 线程池
-    },
-  });
-
-  backendProcess.stdout?.on('data', (data) => {
-    log.info(`Backend: ${data}`);
-  });
-
-  backendProcess.stderr?.on('data', (data) => {
-    log.error(`Backend Error: ${data}`);
-  });
-
-  backendProcess.on('close', (code) => {
-    log.info(`Backend process exited with code ${code}`);
-  });
-}
-
 // 停止后端服务
 function stopBackend(): void {
   if (backendProcess) {
     log.info('Stopping backend server...');
-    backendProcess.kill('SIGTERM'); // 使用 SIGTERM 更优雅
+    backendProcess.kill('SIGTERM');
     backendProcess = null;
   }
 }
 
-// 应用准备就绪
-app.whenReady().then(() => {
-  // 启动后端
-  startBackend();
-  
-  // 创建主窗口
-  mainWindow = createMainWindow();
-
-  app.on('activate', () => {
-    if (mainWindow === null) {
-      mainWindow = createMainWindow();
-    }
-  });
-});
+// 应用准备就绪（异步初始化）
+app.whenReady().then(initializeApp);
 
 // 应用关闭前
-app.on('before-quit', () => {
-  stopBackend();
-});
+app.on('before-quit', stopBackend);
 
 // 所有窗口关闭
 app.on('window-all-closed', () => {
