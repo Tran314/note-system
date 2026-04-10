@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useDragAndDrop } from '../useDragAndDrop';
+import { useDragAndDrop } from '../hooks/useDragAndDrop';
 
 describe('useDragAndDrop', () => {
   const mockItems = [
