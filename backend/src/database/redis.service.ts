@@ -28,6 +28,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     console.log('🔌 Redis 连接已断开');
   }
 
+  // 检查连接
+  async ping(): Promise<string> {
+    return this.client.ping();
+  }
+
   // 获取值
   async get(key: string): Promise<string | null> {
     return this.client.get(key);

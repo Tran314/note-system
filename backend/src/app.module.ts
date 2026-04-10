@@ -11,6 +11,7 @@ import { NoteModule } from './modules/note/note.module';
 import { FolderModule } from './modules/folder/folder.module';
 import { TagModule } from './modules/tag/tag.module';
 import { AttachmentModule } from './modules/attachment/attachment.module';
+import { HealthModule } from './modules/health/health.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -55,6 +56,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     FolderModule,
     TagModule,
     AttachmentModule,
+    HealthModule,  // 健康检查模块
   ],
   controllers: [AppController],
   providers: [
