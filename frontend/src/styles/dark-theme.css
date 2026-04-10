@@ -1,0 +1,169 @@
+/* 暗色主题样式 */
+.dark {
+  /* 背景色 */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  
+  /* 文字色 */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  
+  /* 边框色 */
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  
+  /* 强调色 */
+  --accent-primary: #3b82f6;
+  --accent-secondary: #60a5fa;
+  
+  /* 状态色 */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+}
+
+/* 暗色主题下的组件样式 */
+.dark body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.dark .bg-gray-50 {
+  background-color: var(--bg-secondary);
+}
+
+.dark .bg-white {
+  background-color: var(--bg-secondary);
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--bg-tertiary);
+}
+
+.dark .text-gray-900 {
+  color: var(--text-primary);
+}
+
+.dark .text-gray-700 {
+  color: var(--text-secondary);
+}
+
+.dark .text-gray-500 {
+  color: var(--text-tertiary);
+}
+
+.dark .border-gray-200 {
+  border-color: var(--border-primary);
+}
+
+.dark .border-gray-300 {
+  border-color: var(--border-secondary);
+}
+
+/* 编辑器暗色主题 */
+.dark .ProseMirror {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dark .ProseMirror p {
+  color: var(--text-primary);
+}
+
+.dark .ProseMirror h1,
+.dark .ProseMirror h2,
+.dark .ProseMirror h3 {
+  color: var(--text-primary);
+}
+
+.dark .ProseMirror blockquote {
+  border-left-color: var(--border-secondary);
+  color: var(--text-secondary);
+}
+
+.dark .ProseMirror code {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dark .ProseMirror pre {
+  background-color: var(--bg-tertiary);
+}
+
+/* 侧边栏暗色主题 */
+.dark aside {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+.dark aside button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* 输入框暗色主题 */
+.dark input,
+.dark textarea {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* 按钮暗色主题 */
+.dark button:not(.btn-primary):not(.btn-danger) {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dark button:hover:not(.btn-primary):not(.btn-danger) {
+  background-color: var(--border-secondary);
+}
+
+/* 模态框暗色主题 */
+.dark [role="dialog"] {
+  background-color: var(--bg-secondary);
+}
+
+/* 下拉菜单暗色主题 */
+.dark [role="menu"] {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+/* 工具提示暗色主题 */
+.dark [role="tooltip"] {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* 滚动条暗色主题 */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* 选择文本颜色 */
+.dark ::selection {
+  background-color: var(--accent-primary);
+  color: white;
+}

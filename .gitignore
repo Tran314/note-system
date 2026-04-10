@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Temporary
+tmp/
+temp/
+.cache/
+
+# Database
+*.db
+*.sqlite
+
+# Uploads (local development)
+uploads/
+
+# Docker volumes (local)
+postgres_data/
+redis_data/
+
+# Backend specific
+backend/prisma/*.db
+backend/uploads/
+
+# Frontend specific
+frontend/dist/
+
+# Secrets (never commit)
+*.pem
+*.key
+secrets/
+
+# Package locks (optional - some teams prefer to commit)
+# package-lock.json
+# pnpm-lock.yaml
