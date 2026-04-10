@@ -26,7 +26,7 @@ function createMainWindow(): BrowserWindow {
     height: 900,
     minWidth: 1000,
     minHeight: 600,
-    title: '笔记系统',
+    title: 'Nebula',
     icon: path.join(__dirname, '../build/icon.png'),
     webPreferences: {
       nodeIntegration: false,

@@ -1,5 +1,5 @@
 {
-  "name": "note-system",
+  "name": "nebula",
   "version": "2.0.0",
   "description": "自建笔记系统 - NestJS + React + Electron",
   "private": true,

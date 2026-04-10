@@ -1,5 +1,5 @@
 {
-  "name": "note-system-desktop",
+  "name": "nebula-desktop",
   "version": "1.0.0",
   "description": "笔记系统桌面版 - Electron",
   "main": "dist/main.js",
@@ -28,8 +28,8 @@
     "typescript": "^5.3.3"
   },
   "build": {
-    "appId": "com.notesystem.app",
-    "productName": "笔记系统",
+    "appId": "com.nebula.app",
+    "productName": "Nebula",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -93,7 +93,7 @@
     "publish": {
       "provider": "github",
       "owner": "your-github-username",
-      "repo": "note-system"
+      "repo": "nebula"
     }
   }
 }

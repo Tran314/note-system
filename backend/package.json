@@ -1,5 +1,5 @@
 {
-  "name": "note-system-backend",
+  "name": "nebula-backend",
   "version": "1.0.0",
   "description": "自建笔记系统后端服务 - NestJS + PostgreSQL",
   "author": "",

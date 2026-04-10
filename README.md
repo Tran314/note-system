@@ -1,7 +1,9 @@
-# 📝 自建笔记系统 v2.0
+# 🌌 Nebula
 
 > 一个现代化、安全、可扩展的笔记管理系统
 > 支持 Web、桌面端（Electron）多平台
+
+**Nebula** - 意为星云，象征思维如星云般凝聚成形
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-18.x-61dafb.svg)
@@ -58,8 +60,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/note-system.git
-cd note-system
+git clone https://github.com/your-username/nebula.git
+cd nebula
 
 # 安装所有依赖
 npm run install:all
