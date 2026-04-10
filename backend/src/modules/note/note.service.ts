@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
@@ -115,7 +115,7 @@ export class NoteService {
     });
 
     if (!note) {
-      throw new Error('笔记不存在');
+      throw new NotFoundException('笔记不存在');
     }
 
     return note;
@@ -131,7 +131,7 @@ export class NoteService {
     });
 
     if (!currentNote) {
-      throw new Error('笔记不存在');
+      throw new NotFoundException('笔记不存在');
     }
 
     // 更新笔记
@@ -178,7 +178,7 @@ export class NoteService {
     });
 
     if (!note) {
-      throw new Error('笔记不存在');
+      throw new NotFoundException('笔记不存在');
     }
 
     await this.prisma.note.update({

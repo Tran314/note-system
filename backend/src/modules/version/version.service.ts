@@ -18,10 +18,12 @@ export class VersionService {
     });
   }
 
-  async createVersion(noteId: string, data: { content: string }) {
+  async createVersion(noteId: string, data: { version: number; title: string; content: string }) {
     return this.prisma.noteVersion.create({
       data: {
         noteId,
+        version: data.version,
+        title: data.title,
         content: data.content,
       },
     });

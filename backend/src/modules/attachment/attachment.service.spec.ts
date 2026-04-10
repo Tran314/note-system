@@ -1,34 +1,38 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttachmentService } from './attachment.service';
 import { PrismaService } from '../../database/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  readFileSync: jest.fn(),
+  unlinkSync: jest.fn(),
+}));
 
 describe('AttachmentService', () => {
   let service: AttachmentService;
   let prisma: PrismaService;
-
-  const mockAttachment = {
-    id: 'attachment-id',
-    userId: 'user-id',
-    filename: 'test.pdf',
-    originalName: 'test.pdf',
-    mimeType: 'application/pdf',
-    size: 1024,
-    path: '/uploads/test.pdf',
-    createdAt: new Date(),
-  };
+  let configService: ConfigService;
 
   const mockPrisma = {
     attachment: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
     },
-    noteAttachment: {
-      create: jest.fn(),
-      delete: jest.fn(),
-      findMany: jest.fn(),
+    note: {
+      findFirst: jest.fn(),
     },
+  };
+
+  const mockConfigService = {
+    get: jest.fn((key: string, defaultValue: any) => defaultValue),
   };
 
   beforeEach(async () => {
@@ -39,51 +43,113 @@ describe('AttachmentService', () => {
           provide: PrismaService,
           useValue: mockPrisma,
         },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
       ],
     }).compile();
 
     service = module.get<AttachmentService>(AttachmentService);
     prisma = module.get<PrismaService>(PrismaService);
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('upload', () => {
-    it('should upload attachment', async () => {
-      mockPrisma.attachment.create.mockResolvedValue(mockAttachment as any);
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
 
-      const result = await service.upload('user-id', {
-        filename: 'test.pdf',
+  describe('upload', () => {
+    it('should upload file successfully', async () => {
+      const mockFile: Express.Multer.File = {
+        fieldname: 'file',
         originalname: 'test.pdf',
+        encoding: '7bit',
         mimetype: 'application/pdf',
         size: 1024,
-        path: '/uploads/test.pdf',
-      });
+        destination: '/tmp',
+        filename: 'test.pdf',
+        path: '/tmp/test.pdf',
+        buffer: Buffer.from('test content'),
+        stream: undefined as any,
+      };
 
-      expect(result.filename).toBe('test.pdf');
+      const mockAttachment = {
+        id: '1',
+        userId: 'user-id',
+        filename: 'test.pdf',
+        filePath: 'uuid.pdf',
+        fileSize: 1024,
+        mimeType: 'application/pdf',
+      };
+
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
+      (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+      mockPrisma.attachment.create.mockResolvedValue(mockAttachment);
+
+      const result = await service.upload('user-id', mockFile);
+      expect(result).toEqual(mockAttachment);
+    });
+
+    it('should throw if file size exceeds limit', async () => {
+      const mockFile: Express.Multer.File = {
+        fieldname: 'file',
+        originalname: 'large.pdf',
+        encoding: '7bit',
+        mimetype: 'application/pdf',
+        size: 20000000, // 20MB
+        destination: '/tmp',
+        filename: 'large.pdf',
+        path: '/tmp/large.pdf',
+        buffer: Buffer.from('test content'),
+        stream: undefined as any,
+      };
+
+      mockConfigService.get.mockReturnValue(10485760); // 10MB
+
+      await expect(service.upload('user-id', mockFile)).rejects.toThrow('文件大小超过限制');
     });
   });
 
-  describe('findByUser', () => {
+  describe('findAll', () => {
     it('should return user attachments', async () => {
-      mockPrisma.attachment.findMany.mockResolvedValue([mockAttachment] as any);
+      const mockAttachments = [
+        {
+          id: '1',
+          userId: 'user-id',
+          filename: 'test.pdf',
+          fileSize: 1024,
+        },
+      ];
+
+      mockPrisma.attachment.findMany.mockResolvedValue(mockAttachments);
 
       const result = await service.findAll('user-id');
-
-      expect(result.length).toBe(1);
+      expect(result).toHaveLength(1);
     });
   });
 
-  describe('delete', () => {
+  describe('remove', () => {
     it('should delete attachment', async () => {
-      mockPrisma.attachment.findFirst.mockResolvedValue(mockAttachment as any);
-      mockPrisma.attachment.delete.mockResolvedValue(mockAttachment as any);
+      const mockAttachment = {
+        id: '1',
+        userId: 'user-id',
+        filename: 'test.pdf',
+        filePath: 'uuid.pdf',
+      };
 
-      await service.delete('user-id', 'attachment-id');
+      mockPrisma.attachment.findFirst.mockResolvedValue(mockAttachment);
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.unlinkSync as jest.Mock).mockReturnValue(undefined);
+      mockPrisma.attachment.delete.mockResolvedValue({ id: '1' });
 
-      expect(mockPrisma.attachment.delete).toHaveBeenCalled();
+      const result = await service.remove('user-id', '1');
+      expect(result).toEqual({ message: '文件已删除' });
     });
   });
 });

@@ -6,21 +6,23 @@ describe('TagService', () => {
   let service: TagService;
   let prisma: PrismaService;
 
-  const mockTag = {
-    id: 'tag-id',
-    userId: 'user-id',
-    name: 'Important',
-    color: '#FF0000',
-    createdAt: new Date(),
-  };
-
   const mockPrisma = {
     tag: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+    },
+    noteTag: {
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    note: {
+      findFirst: jest.fn(),
     },
   };
 
@@ -39,51 +41,80 @@ describe('TagService', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  describe('findByUser', () => {
+  describe('findAll', () => {
     it('should return user tags', async () => {
-      mockPrisma.tag.findMany.mockResolvedValue([mockTag] as any);
+      const mockTags = [
+        {
+          id: '1',
+          userId: 'user-id',
+          name: 'Test Tag',
+          color: '#FF0000',
+          _count: { notes: 5 },
+        },
+      ];
+
+      mockPrisma.tag.findMany.mockResolvedValue(mockTags);
 
       const result = await service.findAll('user-id');
-
-      expect(result.length).toBe(1);
+      expect(result).toHaveLength(1);
+      expect(result[0].noteCount).toBe(5);
     });
   });
 
   describe('create', () => {
     it('should create tag', async () => {
-      mockPrisma.tag.create.mockResolvedValue(mockTag as any);
+      const mockTag = {
+        id: '1',
+        userId: 'user-id',
+        name: 'Test Tag',
+        color: '#FF0000',
+      };
 
-      const result = await service.create('user-id', { name: 'Important', color: '#FF0000' });
+      mockPrisma.tag.findFirst.mockResolvedValue(null);
+      mockPrisma.tag.create.mockResolvedValue(mockTag);
 
-      expect(result.name).toBe('Important');
+      const result = await service.create('user-id', { name: 'Test Tag', color: '#FF0000' });
+      expect(result).toEqual(mockTag);
+    });
+
+    it('should throw if tag name exists', async () => {
+      mockPrisma.tag.findFirst.mockResolvedValue({ id: '1', name: 'Test Tag' });
+
+      await expect(
+        service.create('user-id', { name: 'Test Tag' }),
+      ).rejects.toThrow('标签名已存在');
     });
   });
 
   describe('update', () => {
     it('should update tag', async () => {
-      mockPrisma.tag.update.mockResolvedValue({
-        ...mockTag,
+      const mockTag = {
+        id: '1',
+        userId: 'user-id',
         name: 'Updated Tag',
-      } as any);
+        color: '#00FF00',
+      };
 
-      const result = await service.update('user-id', 'tag-id', { name: 'Updated Tag' });
+      mockPrisma.tag.findFirst.mockResolvedValue(null);
+      mockPrisma.tag.update.mockResolvedValue(mockTag);
 
-      expect(result.name).toBe('Updated Tag');
+      const result = await service.update('user-id', '1', { name: 'Updated Tag' });
+      expect(result).toEqual(mockTag);
     });
   });
 
-  describe('delete', () => {
+  describe('remove', () => {
     it('should delete tag', async () => {
-      mockPrisma.tag.findUnique.mockResolvedValue(mockTag as any);
-      mockPrisma.tag.delete.mockResolvedValue(mockTag as any);
+      mockPrisma.tag.findFirst.mockResolvedValue({ id: '1' });
+      mockPrisma.noteTag.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.tag.delete.mockResolvedValue({ id: '1' });
 
-      await service.remove('user-id', 'tag-id');
-
-      expect(mockPrisma.tag.delete).toHaveBeenCalled();
+      const result = await service.remove('user-id', '1');
+      expect(result).toEqual({ message: '标签已删除' });
     });
   });
 });

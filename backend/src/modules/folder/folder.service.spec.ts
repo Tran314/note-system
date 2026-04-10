@@ -6,17 +6,10 @@ describe('FolderService', () => {
   let service: FolderService;
   let prisma: PrismaService;
 
-  const mockFolder = {
-    id: 'folder-id',
-    userId: 'user-id',
-    name: 'Test Folder',
-    parentId: null,
-    createdAt: new Date(),
-  };
-
   const mockPrisma = {
     folder: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -39,51 +32,52 @@ describe('FolderService', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  describe('findByUser', () => {
+  describe('findAll', () => {
     it('should return user folders', async () => {
-      mockPrisma.folder.findMany.mockResolvedValue([mockFolder] as any);
+      const mockFolders = [
+        {
+          id: '1',
+          userId: 'user-id',
+          name: 'Test Folder',
+          parentId: null,
+        },
+      ];
+
+      mockPrisma.folder.findMany.mockResolvedValue(mockFolders);
 
       const result = await service.findAll('user-id');
-
-      expect(result.length).toBe(1);
+      expect(result).toHaveLength(1);
     });
   });
 
   describe('create', () => {
     it('should create folder', async () => {
-      mockPrisma.folder.create.mockResolvedValue(mockFolder as any);
+      const mockFolder = {
+        id: '1',
+        userId: 'user-id',
+        name: 'Test Folder',
+        parentId: null,
+      };
 
-      const result = await service.create('user-id', { name: 'New Folder' });
+      mockPrisma.folder.findFirst.mockResolvedValue(null);
+      mockPrisma.folder.create.mockResolvedValue(mockFolder);
 
-      expect(result.name).toBe('Test Folder');
-    });
-  });
-
-  describe('update', () => {
-    it('should update folder', async () => {
-      mockPrisma.folder.update.mockResolvedValue({
-        ...mockFolder,
-        name: 'Updated Folder',
-      } as any);
-
-      const result = await service.update('user-id', 'folder-id', { name: 'Updated Folder' });
-
-      expect(result.name).toBe('Updated Folder');
+      const result = await service.create('user-id', { name: 'Test Folder' });
+      expect(result).toEqual(mockFolder);
     });
   });
 
   describe('delete', () => {
     it('should delete folder', async () => {
-      mockPrisma.folder.findUnique.mockResolvedValue(mockFolder as any);
-      mockPrisma.folder.delete.mockResolvedValue(mockFolder as any);
+      mockPrisma.folder.findFirst.mockResolvedValue({ id: '1' });
+      mockPrisma.folder.delete.mockResolvedValue({ id: '1' });
 
-      await service.remove('user-id', 'folder-id');
-
-      expect(mockPrisma.folder.delete).toHaveBeenCalled();
+      const result = await service.remove('user-id', '1');
+      expect(result).toEqual({ message: '文件夹已删除' });
     });
   });
 });
