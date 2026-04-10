@@ -20,6 +20,21 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { Note } from '../types/note.types';
 
+const normalizeSearchText = (value: string) =>
+  value.toLowerCase().replace(/\s+/g, ' ').trim();
+
+const buildSearchIndex = (note: Note) =>
+  normalizeSearchText(
+    [
+      note.title,
+      note.content,
+      note.folder?.name,
+      ...(note.tags?.map((nt) => nt.tag?.name || '') || []),
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
 function NoteList() {
   const navigate = useNavigate();
   const { notes, loading, fetchNotes, deleteNote, prefetchNote } = useNoteStore();
@@ -28,6 +43,7 @@ function NoteList() {
 
   const [keywordInput, setKeywordInput] = useState('');
   const deferredKeyword = useDeferredValue(keywordInput.trim());
+  const normalizedKeyword = normalizeSearchText(deferredKeyword);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -39,11 +55,15 @@ function NoteList() {
 
   useEffect(() => {
     fetchNotes({
-      keyword: deferredKeyword || undefined,
       folderId: selectedFolder || undefined,
       tagId: selectedTag || undefined,
+      limit: 200,
     });
-  }, [deferredKeyword, selectedFolder, selectedTag, fetchNotes]);
+  }, [selectedFolder, selectedTag, fetchNotes]);
+
+  const displayedNotes = normalizedKeyword
+    ? notes.filter((note) => buildSearchIndex(note).includes(normalizedKeyword))
+    : notes;
 
   const handleDelete = async (noteId: string) => {
     if (confirm('确定要删除此笔记吗？')) {
@@ -199,18 +219,20 @@ function NoteList() {
       <div className="flex-1 overflow-auto p-4">
         {loading ? (
           <div className="py-8 text-center text-gray-500">加载中...</div>
-        ) : notes.length === 0 ? (
+        ) : displayedNotes.length === 0 ? (
           <div className="py-12 text-center text-gray-400">
             <FileText size={48} className="mx-auto mb-3 opacity-50" />
-            <p className="mb-2">暂无笔记</p>
-            <Button variant="ghost" onClick={handleCreateNote}>
-              <Plus size={16} />
-              创建第一篇笔记
-            </Button>
+            <p className="mb-2">{normalizedKeyword ? '没有匹配的笔记' : '暂无笔记'}</p>
+            {!normalizedKeyword && (
+              <Button variant="ghost" onClick={handleCreateNote}>
+                <Plus size={16} />
+                创建第一篇笔记
+              </Button>
+            )}
           </div>
         ) : (
           <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4 lg:grid-cols-3' : ''}>
-            {notes.map(renderNoteItem)}
+            {displayedNotes.map(renderNoteItem)}
           </div>
         )}
       </div>

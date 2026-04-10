@@ -8,6 +8,8 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { QueryNotesDto } from './dto/query-notes.dto';
 
+const NOTE_LIST_PREVIEW_LENGTH = 240;
+
 @Injectable()
 export class NoteService {
   constructor(private prisma: PrismaService) {}
@@ -80,9 +82,37 @@ export class NoteService {
     const [notes, total] = await Promise.all([
       this.prisma.note.findMany({
         where,
-        include: {
-          folder: true,
-          tags: { include: { tag: true } },
+        select: {
+          id: true,
+          userId: true,
+          folderId: true,
+          title: true,
+          content: true,
+          isPinned: true,
+          isDeleted: true,
+          deletedAt: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true,
+          folder: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          tags: {
+            select: {
+              noteId: true,
+              tagId: true,
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
         skip: (page - 1) * limit,
@@ -92,7 +122,7 @@ export class NoteService {
     ]);
 
     return {
-      notes,
+      notes: notes.map((note) => this.toNoteListItem(note)),
       pagination: {
         page,
         limit,
@@ -234,9 +264,65 @@ export class NoteService {
     const notes = await this.prisma.note.findMany({
       where: { userId, isDeleted: true },
       orderBy: { deletedAt: 'desc' },
+      select: {
+        id: true,
+        userId: true,
+        folderId: true,
+        title: true,
+        content: true,
+        isPinned: true,
+        isDeleted: true,
+        deletedAt: true,
+        version: true,
+        createdAt: true,
+        updatedAt: true,
+        folder: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        tags: {
+          select: {
+            noteId: true,
+            tagId: true,
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    return notes;
+    return notes.map((note) => this.toNoteListItem(note));
+  }
+
+  private toNoteListItem(note: any) {
+    return {
+      ...note,
+      content: this.buildContentPreview(note.content),
+    };
+  }
+
+  private buildContentPreview(content?: string | null) {
+    if (!content) {
+      return '';
+    }
+
+    const plainText = content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (plainText.length <= NOTE_LIST_PREVIEW_LENGTH) {
+      return plainText;
+    }
+
+    return `${plainText.slice(0, NOTE_LIST_PREVIEW_LENGTH)}...`;
   }
 
   private async validateFolderAccess(userId: string, folderId?: string) {

@@ -3,11 +3,11 @@ import { Note } from '../types/note.types';
 import { noteService } from '../services/note.service';
 
 const NOTE_LIST_CACHE_KEY = 'note-list-cache';
-const NOTE_DETAIL_CACHE_KEY = 'note-detail-cache';
 const NOTE_LIST_CACHE_TTL = 60 * 1000;
-const NOTE_DETAIL_CACHE_TTL = 5 * 60 * 1000;
+const NOTE_DETAIL_MEMORY_TTL = 5 * 60 * 1000;
+const NOTE_DETAIL_LRU_LIMIT = 24;
 
-type NoteCacheEntry = {
+type NoteMemoryEntry = {
   note: Note;
   cachedAt: number;
 };
@@ -33,6 +33,8 @@ interface NoteState {
   restoreNote: (id: string) => Promise<void>;
   setPage: (page: number) => void;
 }
+
+const noteDetailMemoryCache = new Map<string, NoteMemoryEntry>();
 
 const readNoteListCache = (): NoteListCache | null => {
   try {
@@ -63,48 +65,47 @@ const writeNoteListCache = (notes: Note[], total: number) => {
   );
 };
 
-const readNoteDetailCache = (): Record<string, NoteCacheEntry> => {
-  try {
-    const raw = localStorage.getItem(NOTE_DETAIL_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, NoteCacheEntry>) : {};
-  } catch {
-    return {};
+const pruneNoteDetailMemoryCache = () => {
+  while (noteDetailMemoryCache.size > NOTE_DETAIL_LRU_LIMIT) {
+    const oldestKey = noteDetailMemoryCache.keys().next().value;
+    if (!oldestKey) {
+      break;
+    }
+    noteDetailMemoryCache.delete(oldestKey);
   }
 };
 
-const writeNoteDetailCache = (entries: Record<string, NoteCacheEntry>) => {
-  localStorage.setItem(NOTE_DETAIL_CACHE_KEY, JSON.stringify(entries));
-};
-
 const getCachedNote = (id: string): Note | null => {
-  const cache = readNoteDetailCache();
-  const entry = cache[id];
+  const entry = noteDetailMemoryCache.get(id);
   if (!entry) {
     return null;
   }
 
-  if (Date.now() - entry.cachedAt > NOTE_DETAIL_CACHE_TTL) {
-    delete cache[id];
-    writeNoteDetailCache(cache);
+  if (Date.now() - entry.cachedAt > NOTE_DETAIL_MEMORY_TTL) {
+    noteDetailMemoryCache.delete(id);
     return null;
   }
+
+  noteDetailMemoryCache.delete(id);
+  noteDetailMemoryCache.set(id, {
+    note: entry.note,
+    cachedAt: entry.cachedAt,
+  });
 
   return entry.note;
 };
 
 const cacheNote = (note: Note) => {
-  const cache = readNoteDetailCache();
-  cache[note.id] = {
+  noteDetailMemoryCache.delete(note.id);
+  noteDetailMemoryCache.set(note.id, {
     note,
     cachedAt: Date.now(),
-  };
-  writeNoteDetailCache(cache);
+  });
+  pruneNoteDetailMemoryCache();
 };
 
 const removeCachedNote = (id: string) => {
-  const cache = readNoteDetailCache();
-  delete cache[id];
-  writeNoteDetailCache(cache);
+  noteDetailMemoryCache.delete(id);
 };
 
 const cachedList = readNoteListCache();
@@ -123,7 +124,6 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       const { notes, pagination } = response.data;
 
       writeNoteListCache(notes, pagination.total);
-      notes.forEach(cacheNote);
 
       set({ notes, total: pagination.total, loading: false });
     } catch (error) {
@@ -135,7 +135,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   fetchNote: async (id: string) => {
     const cachedNote = getCachedNote(id);
     if (cachedNote) {
-      set({ currentNote: cachedNote });
+      set({ currentNote: cachedNote, loading: false });
     } else {
       set({ loading: true });
     }
