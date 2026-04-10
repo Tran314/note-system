@@ -1,0 +1,40 @@
+import { IsOptional, IsUUID, IsString, IsBoolean, IsInt, Min } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class QueryNotesDto {
+  @ApiPropertyOptional({ example: 'uuid-folder-id', description: '按文件夹筛选' })
+  @IsOptional()
+  @IsUUID()
+  folderId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-tag-id', description: '按标签筛选' })
+  @IsOptional()
+  @IsUUID()
+  tagId?: string;
+
+  @ApiPropertyOptional({ example: '关键词', description: '搜索关键词' })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({ example: true, description: '是否置顶' })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isPinned?: boolean;
+
+  @ApiPropertyOptional({ example: 1, description: '页码' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, description: '每页数量' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  limit?: number;
+}

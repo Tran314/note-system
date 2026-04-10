@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (dev)
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    ports:
+      - "5432:5432"
+
+  # Redis Cache (dev)
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+  redis_data:
