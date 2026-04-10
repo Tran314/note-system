@@ -2,6 +2,22 @@ import { create } from 'zustand';
 import { Note } from '../types/note.types';
 import { noteService } from '../services/note.service';
 
+const NOTE_LIST_CACHE_KEY = 'note-list-cache';
+const NOTE_DETAIL_CACHE_KEY = 'note-detail-cache';
+const NOTE_LIST_CACHE_TTL = 60 * 1000;
+const NOTE_DETAIL_CACHE_TTL = 5 * 60 * 1000;
+
+type NoteCacheEntry = {
+  note: Note;
+  cachedAt: number;
+};
+
+type NoteListCache = {
+  notes: Note[];
+  total: number;
+  cachedAt: number;
+};
+
 interface NoteState {
   notes: Note[];
   currentNote: Note | null;
@@ -10,6 +26,7 @@ interface NoteState {
   page: number;
   fetchNotes: (params?: any) => Promise<void>;
   fetchNote: (id: string) => Promise<void>;
+  prefetchNote: (id: string) => Promise<void>;
   createNote: (data: any) => Promise<Note>;
   updateNote: (id: string, data: any) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
@@ -17,11 +34,86 @@ interface NoteState {
   setPage: (page: number) => void;
 }
 
+const readNoteListCache = (): NoteListCache | null => {
+  try {
+    const raw = localStorage.getItem(NOTE_LIST_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as NoteListCache;
+    if (Date.now() - parsed.cachedAt > NOTE_LIST_CACHE_TTL) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeNoteListCache = (notes: Note[], total: number) => {
+  localStorage.setItem(
+    NOTE_LIST_CACHE_KEY,
+    JSON.stringify({
+      notes,
+      total,
+      cachedAt: Date.now(),
+    }),
+  );
+};
+
+const readNoteDetailCache = (): Record<string, NoteCacheEntry> => {
+  try {
+    const raw = localStorage.getItem(NOTE_DETAIL_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, NoteCacheEntry>) : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeNoteDetailCache = (entries: Record<string, NoteCacheEntry>) => {
+  localStorage.setItem(NOTE_DETAIL_CACHE_KEY, JSON.stringify(entries));
+};
+
+const getCachedNote = (id: string): Note | null => {
+  const cache = readNoteDetailCache();
+  const entry = cache[id];
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() - entry.cachedAt > NOTE_DETAIL_CACHE_TTL) {
+    delete cache[id];
+    writeNoteDetailCache(cache);
+    return null;
+  }
+
+  return entry.note;
+};
+
+const cacheNote = (note: Note) => {
+  const cache = readNoteDetailCache();
+  cache[note.id] = {
+    note,
+    cachedAt: Date.now(),
+  };
+  writeNoteDetailCache(cache);
+};
+
+const removeCachedNote = (id: string) => {
+  const cache = readNoteDetailCache();
+  delete cache[id];
+  writeNoteDetailCache(cache);
+};
+
+const cachedList = readNoteListCache();
+
 export const useNoteStore = create<NoteState>((set, get) => ({
-  notes: [],
+  notes: cachedList?.notes ?? [],
   currentNote: null,
   loading: false,
-  total: 0,
+  total: cachedList?.total ?? 0,
   page: 1,
 
   fetchNotes: async (params?: any) => {
@@ -29,6 +121,10 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const response = await noteService.getNotes({ ...params, page: get().page });
       const { notes, pagination } = response.data;
+
+      writeNoteListCache(notes, pagination.total);
+      notes.forEach(cacheNote);
+
       set({ notes, total: pagination.total, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -37,13 +133,33 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   fetchNote: async (id: string) => {
-    set({ loading: true });
+    const cachedNote = getCachedNote(id);
+    if (cachedNote) {
+      set({ currentNote: cachedNote });
+    } else {
+      set({ loading: true });
+    }
+
     try {
       const response = await noteService.getNote(id);
+      cacheNote(response.data);
       set({ currentNote: response.data, loading: false });
     } catch (error) {
-      set({ loading: false, currentNote: null });
+      set({ loading: false, currentNote: cachedNote });
       console.error('获取笔记详情失败:', error);
+    }
+  },
+
+  prefetchNote: async (id: string) => {
+    if (getCachedNote(id)) {
+      return;
+    }
+
+    try {
+      const response = await noteService.getNote(id);
+      cacheNote(response.data);
+    } catch (error) {
+      console.error('预取笔记失败:', error);
     }
   },
 
@@ -51,7 +167,12 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const response = await noteService.createNote(data);
       const newNote = response.data;
-      set({ notes: [newNote, ...get().notes], total: get().total + 1 });
+      const nextNotes = [newNote, ...get().notes];
+
+      cacheNote(newNote);
+      writeNoteListCache(nextNotes, get().total + 1);
+
+      set({ notes: nextNotes, total: get().total + 1 });
       return newNote;
     } catch (error) {
       console.error('创建笔记失败:', error);
@@ -63,10 +184,13 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const response = await noteService.updateNote(id, data);
       const updatedNote = response.data;
+      const nextNotes = get().notes.map((note) => (note.id === id ? updatedNote : note));
+
+      cacheNote(updatedNote);
+      writeNoteListCache(nextNotes, get().total);
+
       set({
-        notes: get().notes.map((note) =>
-          note.id === id ? updatedNote : note
-        ),
+        notes: nextNotes,
         currentNote: get().currentNote?.id === id ? updatedNote : get().currentNote,
       });
     } catch (error) {
@@ -78,8 +202,12 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   deleteNote: async (id: string) => {
     try {
       await noteService.deleteNote(id);
+      const nextNotes = get().notes.filter((note) => note.id !== id);
+      writeNoteListCache(nextNotes, Math.max(0, get().total - 1));
+      removeCachedNote(id);
+
       set({
-        notes: get().notes.filter((note) => note.id !== id),
+        notes: nextNotes,
         total: get().total - 1,
         currentNote: get().currentNote?.id === id ? null : get().currentNote,
       });
@@ -93,7 +221,12 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const response = await noteService.restoreNote(id);
       const restoredNote = response.data;
-      set({ notes: [restoredNote, ...get().notes], total: get().total + 1 });
+      const nextNotes = [restoredNote, ...get().notes];
+
+      cacheNote(restoredNote);
+      writeNoteListCache(nextNotes, get().total + 1);
+
+      set({ notes: nextNotes, total: get().total + 1 });
     } catch (error) {
       console.error('恢复笔记失败:', error);
       throw error;

@@ -9,9 +9,8 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, nickname?: string) => Promise<void>;
-  logout: () => void;
+  logout: (notifyServer?: boolean) => void;
   setUser: (user: User) => void;
-  refreshToken: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -37,9 +36,9 @@ export const useAuthStore = create<AuthState>()(
         set({ user, accessToken, isAuthenticated: true });
       },
 
-      logout: () => {
+      logout: (notifyServer = true) => {
         const accessToken = get().accessToken;
-        if (accessToken) {
+        if (notifyServer && accessToken) {
           api.post('/auth/logout').catch(() => {});
         }
         localStorage.removeItem('accessToken');
@@ -49,17 +48,6 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user: User) => {
         set({ user });
       },
-
-      refreshToken: async () => {
-        try {
-          const response = await api.post('/auth/refresh');
-          const { accessToken } = response.data.data;
-          localStorage.setItem('accessToken', accessToken);
-          set({ accessToken });
-        } catch (error) {
-          get().logout();
-        }
-      },
     }),
     {
       name: 'auth-storage',
@@ -68,6 +56,6 @@ export const useAuthStore = create<AuthState>()(
         accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );

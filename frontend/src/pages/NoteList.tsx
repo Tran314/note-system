@@ -22,7 +22,7 @@ import { Note } from '../types/note.types';
 
 function NoteList() {
   const navigate = useNavigate();
-  const { notes, loading, fetchNotes, deleteNote } = useNoteStore();
+  const { notes, loading, fetchNotes, deleteNote, prefetchNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { tags, fetchTags } = useTagStore();
 
@@ -59,6 +59,8 @@ function NoteList() {
     <div
       key={note.id}
       onClick={() => navigate(`/notes/${note.id}`)}
+      onMouseEnter={() => void prefetchNote(note.id)}
+      onFocus={() => void prefetchNote(note.id)}
       className={`note-item group ${viewMode === 'grid' ? 'rounded-lg border hover:shadow-md' : ''}`}
     >
       <div className="mb-2 flex items-start justify-between">

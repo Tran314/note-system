@@ -3,10 +3,8 @@ import {
   Post,
   Get,
   Body,
-  UseGuards,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -38,29 +36,13 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '刷新 Token' })
-  @ApiResponse({ status: 200, description: '刷新成功' })
-  @ApiResponse({ status: 401, description: '刷新令牌无效或已过期' })
-  async refresh(
-    @CurrentUser('sub') userId: string,
-    @Body('refreshToken') refreshToken: string,
-  ) {
-    return this.authService.refresh(userId, refreshToken);
-  }
-
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '用户登出' })
-  @ApiResponse({ status: 200, description: '登出成功' })
-  async logout(
-    @CurrentUser('sub') userId: string,
-    @CurrentUser('jti') jti: string,
-  ) {
-    return this.authService.logout(userId, jti);
+  @ApiOperation({ summary: '用户退出' })
+  @ApiResponse({ status: 200, description: '退出成功' })
+  async logout() {
+    return this.authService.logout();
   }
 
   @Get('me')

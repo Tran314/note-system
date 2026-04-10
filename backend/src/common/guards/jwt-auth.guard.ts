@@ -7,7 +7,6 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { RedisService } from '../../database/redis.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
@@ -16,11 +15,9 @@ export class JwtAuthGuard implements CanActivate {
     private reflector: Reflector,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private redisService: RedisService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // 检查是否为公开接口
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -42,16 +39,9 @@ export class JwtAuthGuard implements CanActivate {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
 
-      // 检查 Token 是否在黑名单中（登出后）
-      const jti = payload.jti;
-      if (jti && await this.redisService.isBlacklisted(jti)) {
-        throw new UnauthorizedException('令牌已被撤销');
-      }
-
-      // 将用户信息附加到请求对象
       request.user = payload;
       return true;
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'TokenExpiredError') {
         throw new UnauthorizedException('访问令牌已过期');
       }
