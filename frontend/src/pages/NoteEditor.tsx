@@ -23,6 +23,7 @@ import {
 import { Button } from '../components/common/Button';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { debounce } from '../utils/format';
+// import { useNoteExport } from '../hooks/useNoteExport'; // 导出功能可按需使用
 
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
