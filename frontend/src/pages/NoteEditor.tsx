@@ -349,9 +349,9 @@ function NoteEditor() {
   }
 
   return (
-    <div className="flex h-full gap-4 bg-white">
+    <div className="flex h-full gap-4 rounded-[24px] border border-stone-200/70 bg-white/45 p-1 backdrop-blur-md">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white p-3">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200/70 bg-white/70 p-3 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}
@@ -401,7 +401,7 @@ function NoteEditor() {
           </div>
         </div>
 
-        <div className="border-b border-gray-200 p-4">
+        <div className="border-b border-stone-200/70 p-4">
           <input
             type="text"
             value={title}
@@ -415,7 +415,7 @@ function NoteEditor() {
           />
         </div>
 
-        <div className="sticky top-[60px] z-10 flex flex-wrap items-center gap-1 border-b border-gray-200 bg-white p-2">
+        <div className="sticky top-[60px] z-10 flex flex-wrap items-center gap-1 border-b border-stone-200/70 bg-white/70 p-2 backdrop-blur-md">
           {toolbarItems.map(({ icon: Icon, action, title, active }, index) => (
             <button
               key={index}
@@ -439,7 +439,7 @@ function NoteEditor() {
       </div>
 
       {!isNewNote && id && (
-        <aside className="w-80 shrink-0 border-l border-gray-200 bg-gray-50 p-4">
+        <aside className="w-80 shrink-0 rounded-r-[22px] border-l border-stone-200/70 bg-stone-50/70 p-4">
           <div className="space-y-4">
             <div className="rounded-lg border border-gray-200 bg-white p-3">
               <button

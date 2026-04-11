@@ -217,7 +217,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   ];
 
   return (
-    <aside className="flex h-full w-64 flex-col overflow-y-auto border-r border-gray-200 bg-gray-50">
+    <aside className="nebula-panel flex h-full w-64 flex-col overflow-y-auto rounded-[28px] bg-white/40">
       <div className="p-3">
         <Button onClick={() => navigate('/notes/new')} className="w-full">
           <Plus size={16} />

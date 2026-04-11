@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --shell-bg: #f6f2ea;
+  --shell-ink: #221f1a;
+  --shell-panel: rgba(255, 251, 245, 0.72);
+  --shell-panel-strong: rgba(255, 252, 248, 0.9);
+  --shell-border: rgba(113, 92, 67, 0.14);
+  --shell-shadow: 0 24px 80px rgba(63, 44, 24, 0.08);
+}
+
+body {
+  color: var(--shell-ink);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 30%),
+    radial-gradient(circle at 85% 18%, rgba(223, 203, 174, 0.28), transparent 22%),
+    radial-gradient(circle at 50% 100%, rgba(198, 182, 160, 0.2), transparent 28%),
+    linear-gradient(180deg, #f9f5ee 0%, #f2ece2 48%, #ece4d8 100%);
+  background-attachment: fixed;
+}
+
 /* 自定义样式 */
 @layer components {
   /* 按钮样式 */
@@ -37,9 +56,61 @@
     @apply p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors;
   }
 
-  .note-item-active {
-    @apply bg-blue-50 border-l-4 border-blue-600;
+.note-item-active {
+  @apply bg-blue-50 border-l-4 border-blue-600;
   }
+}
+
+.nebula-shell {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+
+.nebula-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.72), transparent 20%),
+    radial-gradient(circle at 82% 14%, rgba(179, 154, 120, 0.16), transparent 20%),
+    radial-gradient(circle at 50% 100%, rgba(160, 141, 120, 0.16), transparent 28%);
+  pointer-events: none;
+}
+
+.nebula-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 85%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.nebula-panel {
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-border);
+  box-shadow: var(--shell-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.nebula-panel-strong {
+  background: var(--shell-panel-strong);
+  border: 1px solid rgba(113, 92, 67, 0.16);
+  box-shadow: 0 12px 40px rgba(63, 44, 24, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+.nebula-main {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 248, 0.8), rgba(247, 241, 233, 0.68)),
+    rgba(255, 255, 255, 0.22);
 }
 
 /* TipTap 编辑器样式 */
@@ -68,14 +139,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(120, 103, 81, 0.08);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: rgba(109, 92, 71, 0.32);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(109, 92, 71, 0.48);
 }

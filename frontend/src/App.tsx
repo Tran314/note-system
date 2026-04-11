@@ -27,7 +27,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 // 悬浮加载组件（优化用户体验）
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="nebula-shell flex min-h-screen items-center justify-center">
       <Loading text="加载页面..." />
     </div>
   );

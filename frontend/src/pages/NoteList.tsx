@@ -247,7 +247,7 @@ function NoteList() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-gray-200 bg-white p-4">
+      <div className="rounded-[24px] border border-stone-200/70 bg-white/55 p-4 backdrop-blur-md">
         <div className="mb-3 flex items-center gap-3">
           <div className="flex-1">
             <Input

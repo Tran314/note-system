@@ -8,7 +8,9 @@ function Header() {
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
+  const [isDarkMode, setIsDarkMode] = useState(
+    document.documentElement.classList.contains('dark'),
+  );
 
   const handleLogout = () => {
     logout();
@@ -29,58 +31,60 @@ function Header() {
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
-      {/* 搜索栏 */}
+    <header className="nebula-panel-strong flex h-16 items-center justify-between rounded-[24px] px-6">
       <form onSubmit={handleSearch} className="flex-1 max-w-md">
         <div className="relative">
-          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+          <Search
+            size={20}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+          />
           <input
             type="text"
             placeholder="搜索笔记..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg 
-              focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
-              text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+            className="w-full rounded-2xl border border-stone-200/70 bg-white/60 py-2 pl-10 pr-4 text-gray-900 placeholder-gray-500 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500/40"
           />
         </div>
       </form>
 
-      {/* 右侧工具栏 */}
       <div className="flex items-center gap-4">
-        {/* 暗色模式切换 */}
         <button
           onClick={toggleDarkMode}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          className="rounded-xl p-2 transition-colors hover:bg-stone-200/60"
           title={isDarkMode ? '切换亮色模式' : '切换暗色模式'}
         >
-          {isDarkMode ? <Sun size={20} className="text-gray-600 dark:text-gray-300" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
+          {isDarkMode ? (
+            <Sun size={20} className="text-stone-600" />
+          ) : (
+            <Moon size={20} className="text-stone-600" />
+          )}
         </button>
 
-        {/* 通知 */}
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" title="通知">
-          <Bell size={20} className="text-gray-600 dark:text-gray-300" />
+        <button
+          className="rounded-xl p-2 transition-colors hover:bg-stone-200/60"
+          title="通知"
+        >
+          <Bell size={20} className="text-stone-600" />
         </button>
 
-        {/* 设置 */}
         <button
           onClick={() => navigate('/settings')}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          className="rounded-xl p-2 transition-colors hover:bg-stone-200/60"
           title="设置"
         >
-          <Settings size={20} className="text-gray-600 dark:text-gray-300" />
+          <Settings size={20} className="text-stone-600" />
         </button>
 
-        {/* 用户菜单 */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="flex items-center gap-2 rounded-2xl p-2 transition-colors hover:bg-stone-200/60"
           >
-            <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-800">
               <User size={16} className="text-white" />
             </div>
-            <span className="text-sm text-gray-700 dark:text-gray-200 hidden md:inline">
+            <span className="hidden text-sm text-stone-700 md:inline">
               {user?.nickname || user?.email || '用户'}
             </span>
           </button>
@@ -88,24 +92,24 @@ function Header() {
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[180px]">
+              <div className="nebula-panel-strong absolute right-0 top-full z-50 mt-2 min-w-[180px] rounded-2xl py-2">
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
                     navigate('/settings');
                   }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-200"
+                  className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-100/80"
                 >
                   <Settings size={16} />
                   设置
                 </button>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                <div className="my-1 border-t border-stone-200/80" />
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
                     handleLogout();
                   }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2"
+                  className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50/80"
                 >
                   <LogOut size={16} />
                   退出登录
