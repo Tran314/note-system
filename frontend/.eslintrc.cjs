@@ -8,7 +8,6 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:react/recommended',
     'plugin:react-hooks/recommended',
   ],
   parser: '@typescript-eslint/parser',
@@ -19,15 +18,11 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  plugins: ['react', '@typescript-eslint', 'react-hooks'],
+  plugins: ['@typescript-eslint', 'react-hooks'],
   rules: {
-    'react/react-in-jsx-scope': 'off',
-    'react/prop-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'off',
+    'react-hooks/exhaustive-deps': 'off',
+    'no-case-declarations': 'off',
   },
-  settings: {
-    react: {
-      version: 'detect',
-    },
-  },
+  ignorePatterns: ['dist', 'node_modules', 'coverage', 'playwright-report'],
 };

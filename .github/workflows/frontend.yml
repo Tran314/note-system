@@ -124,6 +124,10 @@ jobs:
         with:
           name: frontend-dist
           path: frontend/dist
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --legacy-peer-deps
       
       - name: Install backend dependencies
         working-directory: backend
