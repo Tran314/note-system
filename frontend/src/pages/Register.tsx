@@ -6,15 +6,17 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 
-const registerSchema = z.object({
-  email: z.string().email('邮箱格式不正确'),
-  password: z.string().min(6, '密码至少6位'),
-  confirmPassword: z.string().min(6, '密码至少6位'),
-  nickname: z.string().min(1, '昵称不能为空').max(50, '昵称最多50位'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: '两次密码不一致',
-  path: ['confirmPassword'],
-});
+const registerSchema = z
+  .object({
+    email: z.string().email('邮箱格式不正确'),
+    password: z.string().min(6, '密码至少 6 位'),
+    confirmPassword: z.string().min(6, '密码至少 6 位'),
+    nickname: z.string().min(1, '昵称不能为空').max(50, '昵称最多 50 个字符'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: '两次密码不一致',
+    path: ['confirmPassword'],
+  });
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
@@ -46,33 +48,37 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="card w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6">📝 注册账号</h2>
+    <div className="nebula-shell flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="card w-full max-w-md p-8">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-900 text-lg font-semibold text-white shadow-[0_14px_40px_rgba(63,44,24,0.24)]">
+            N
+          </div>
+          <h2 className="text-3xl font-semibold tracking-tight text-stone-900">创建账号</h2>
+          <p className="mt-2 text-sm text-stone-500">开始搭建属于你的笔记空间</p>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          // 昵称输入
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">昵称</label>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-stone-700">昵称</label>
             <div className="relative">
-              <User className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input
                 type="text"
                 {...register('nickname')}
-                placeholder="您的昵称"
+                placeholder="你的昵称"
                 className="input-field pl-10"
               />
             </div>
             {errors.nickname && (
-              <p className="text-red-500 text-sm mt-1">{errors.nickname.message}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.nickname.message}</p>
             )}
           </div>
 
-          // 邮箱输入
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">邮箱</label>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-stone-700">邮箱</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input
                 type="email"
                 {...register('email')}
@@ -80,16 +86,13 @@ function Register() {
                 className="input-field pl-10"
               />
             </div>
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
           </div>
 
-          // 密码输入
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">密码</label>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-stone-700">密码</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input
                 type="password"
                 {...register('password')}
@@ -98,15 +101,14 @@ function Register() {
               />
             </div>
             {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
             )}
           </div>
 
-          // 确认密码
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">确认密码</label>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-stone-700">确认密码</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input
                 type="password"
                 {...register('confirmPassword')}
@@ -115,31 +117,24 @@ function Register() {
               />
             </div>
             {errors.confirmPassword && (
-              <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.confirmPassword.message}</p>
             )}
           </div>
 
-          // 错误提示
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
+            <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50/90 p-3 text-red-600">
               <AlertCircle size={18} />
-              <span>{error}</span>
+              <span className="text-sm">{error}</span>
             </div>
           )}
 
-          // 注册按钮
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
             {loading ? '注册中...' : '注册'}
           </button>
 
-          // 登录链接
-          <p className="text-center text-sm text-gray-500 mt-4">
+          <p className="text-center text-sm text-stone-500">
             已有账号？
-            <Link to="/login" className="text-blue-600 hover:underline ml-1">
+            <Link to="/login" className="ml-1 text-stone-900 underline decoration-stone-300 underline-offset-4">
               登录
             </Link>
           </p>

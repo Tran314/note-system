@@ -17,18 +17,18 @@ const icons = {
   info: Info,
 };
 
-const colors = {
-  success: 'bg-green-50 border-green-200 text-green-800',
-  error: 'bg-red-50 border-red-200 text-red-800',
-  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
+const toneClasses = {
+  success: 'border-emerald-200/80 bg-emerald-50/92 text-emerald-800',
+  error: 'border-red-200/80 bg-red-50/92 text-red-700',
+  warning: 'border-amber-200/80 bg-amber-50/92 text-amber-800',
+  info: 'border-stone-200/80 bg-[rgba(255,251,245,0.94)] text-stone-700',
 };
 
-export function Toast({ 
-  message, 
-  type = 'info', 
-  duration = 3000, 
-  onClose 
+export function Toast({
+  message,
+  type = 'info',
+  duration = 3000,
+  onClose,
 }: ToastProps) {
   const [visible, setVisible] = useState(true);
   const Icon = icons[type];
@@ -45,7 +45,9 @@ export function Toast({
   if (!visible) return null;
 
   return (
-    <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg ${colors[type]}`}>
+    <div
+      className={`fixed right-4 top-4 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-[0_20px_50px_rgba(63,44,24,0.16)] backdrop-blur-xl ${toneClasses[type]}`}
+    >
       <Icon size={18} />
       <span className="text-sm">{message}</span>
       <button
@@ -53,7 +55,7 @@ export function Toast({
           setVisible(false);
           onClose?.();
         }}
-        className="ml-2 hover:opacity-70"
+        className="ml-1 rounded-lg p-1 transition hover:bg-black/5"
       >
         <X size={16} />
       </button>
