@@ -43,7 +43,7 @@ export class AuthService {
       data: { userId: user.id },
     });
 
-    const accessToken = this.generateAccessToken(user.id);
+    const accessToken = this.generateAccessToken(user.id, user.email);
 
     return {
       user: {
@@ -73,7 +73,7 @@ export class AuthService {
       throw new UnauthorizedException('邮箱或密码错误');
     }
 
-    const accessToken = this.generateAccessToken(user.id);
+    const accessToken = this.generateAccessToken(user.id, user.email);
 
     return {
       user: {
@@ -110,17 +110,21 @@ export class AuthService {
     return user;
   }
 
-  private generateAccessToken(userId: string) {
+  private generateAccessToken(userId: string, email: string) {
     const accessExpiresIn = this.configService.get<number>(
       'JWT_ACCESS_EXPIRES_IN',
       2592000,
     );
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const rootEmail = this.configService.get<string>('ROOT_EMAIL')?.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    const roles =
+      rootEmail && normalizedEmail === rootEmail ? ['root', 'user'] : ['user'];
 
     return this.jwtService.sign(
       {
         sub: userId,
-        roles: ['user'],
+        roles,
       },
       {
         secret: jwtSecret,
