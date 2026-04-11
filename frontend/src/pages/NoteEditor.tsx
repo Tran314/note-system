@@ -51,6 +51,8 @@ function NoteEditor() {
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedTitleRef = useRef('');
+  const lastSavedContentRef = useRef('');
 
   const isNewNote = id === 'new';
 
@@ -110,9 +112,25 @@ function NoteEditor() {
   }, [id, isNewNote, previousNote, nextNote, prefetchNote]);
 
   useEffect(() => {
+    if (isNewNote && editor) {
+      setTitle('');
+      editor.commands.setContent('');
+      lastSavedTitleRef.current = '';
+      lastSavedContentRef.current = '';
+      setLastSaved(null);
+      setHasUnsavedChanges(false);
+      setVersions([]);
+      setAttachments([]);
+      setVersionsLoaded(false);
+      setAttachmentsLoaded(false);
+      return;
+    }
+
     if (currentNote && editor) {
       setTitle(currentNote.title);
       editor.commands.setContent(currentNote.content || '');
+      lastSavedTitleRef.current = currentNote.title;
+      lastSavedContentRef.current = currentNote.content || '';
       setLastSaved(new Date(currentNote.updatedAt));
       setHasUnsavedChanges(false);
       setVersions([]);
@@ -120,7 +138,7 @@ function NoteEditor() {
       setVersionsLoaded(false);
       setAttachmentsLoaded(false);
     }
-  }, [currentNote, editor]);
+  }, [currentNote, editor, isNewNote]);
 
   useEffect(() => {
     return () => {
@@ -131,6 +149,8 @@ function NoteEditor() {
   }, []);
 
   const handleSave = async (isAutoSave = false) => {
+    const content = editor?.getHTML() || '';
+
     if (!title.trim() && !editor?.getText().trim()) {
       if (!isAutoSave) {
         alert('请输入标题或内容');
@@ -142,16 +162,34 @@ function NoteEditor() {
       setSaving(true);
     }
 
-    const content = editor?.getHTML() || '';
-
     try {
       if (isNewNote) {
         const newNote = await createNote({ title, content });
+        lastSavedTitleRef.current = newNote.title;
+        lastSavedContentRef.current = newNote.content || '';
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
         navigate(`/notes/${newNote.id}`, { replace: true });
       } else {
-        await updateNote(id!, { title, content });
+        const payload: { title?: string; content?: string } = {};
+
+        if (title !== lastSavedTitleRef.current) {
+          payload.title = title;
+        }
+
+        if (content !== lastSavedContentRef.current) {
+          payload.content = content;
+        }
+
+        if (Object.keys(payload).length === 0) {
+          setHasUnsavedChanges(false);
+          setLastSaved((current) => current ?? new Date());
+          return;
+        }
+
+        await updateNote(id!, payload);
+        lastSavedTitleRef.current = payload.title ?? lastSavedTitleRef.current;
+        lastSavedContentRef.current = payload.content ?? lastSavedContentRef.current;
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
       }

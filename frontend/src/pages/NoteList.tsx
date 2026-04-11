@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
 import { useFolderStore } from '../store/folder.store';
@@ -20,6 +20,11 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { Note } from '../types/note.types';
 
+const NOTE_LIST_SEARCH_KEY = 'note-list-search';
+const NOTE_LIST_VIEW_MODE_KEY = 'note-list-view-mode';
+const LIST_ROW_HEIGHT = 140;
+const LIST_OVERSCAN = 6;
+
 const normalizeSearchText = (value: string) =>
   value.toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -35,18 +40,37 @@ const buildSearchIndex = (note: Note) =>
       .join(' '),
   );
 
+const readStoredText = (key: string) => {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+};
+
+const readStoredViewMode = (): 'list' | 'grid' => {
+  try {
+    return localStorage.getItem(NOTE_LIST_VIEW_MODE_KEY) === 'grid' ? 'grid' : 'list';
+  } catch {
+    return 'list';
+  }
+};
+
 function NoteList() {
   const navigate = useNavigate();
   const { notes, loading, fetchNotes, deleteNote, prefetchNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { tags, fetchTags } = useTagStore();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const [keywordInput, setKeywordInput] = useState('');
+  const [keywordInput, setKeywordInput] = useState(() => readStoredText(NOTE_LIST_SEARCH_KEY));
   const deferredKeyword = useDeferredValue(keywordInput.trim());
   const normalizedKeyword = normalizeSearchText(deferredKeyword);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => readStoredViewMode());
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   useEffect(() => {
     fetchFolders();
@@ -61,12 +85,82 @@ function NoteList() {
     });
   }, [selectedFolder, selectedTag, fetchNotes]);
 
-  const displayedNotes = normalizedKeyword
-    ? notes.filter((note) => buildSearchIndex(note).includes(normalizedKeyword))
-    : notes;
+  useEffect(() => {
+    localStorage.setItem(NOTE_LIST_SEARCH_KEY, keywordInput);
+  }, [keywordInput]);
+
+  useEffect(() => {
+    localStorage.setItem(NOTE_LIST_VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const syncContainerHeight = () => {
+      setContainerHeight(container.clientHeight);
+    };
+
+    syncContainerHeight();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', syncContainerHeight);
+      return () => window.removeEventListener('resize', syncContainerHeight);
+    }
+
+    const observer = new ResizeObserver(() => syncContainerHeight());
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (viewMode !== 'list') {
+      setScrollTop(0);
+      return;
+    }
+
+    scrollContainerRef.current?.scrollTo({ top: 0 });
+    setScrollTop(0);
+  }, [viewMode, normalizedKeyword, selectedFolder, selectedTag]);
+
+  const displayedNotes = useMemo(
+    () =>
+      normalizedKeyword
+        ? notes.filter((note) => buildSearchIndex(note).includes(normalizedKeyword))
+        : notes,
+    [notes, normalizedKeyword],
+  );
+
+  const visibleRange = useMemo(() => {
+    if (viewMode !== 'list') {
+      return null;
+    }
+
+    const safeContainerHeight = containerHeight || LIST_ROW_HEIGHT * 6;
+    const startIndex = Math.max(0, Math.floor(scrollTop / LIST_ROW_HEIGHT) - LIST_OVERSCAN);
+    const endIndex = Math.min(
+      displayedNotes.length,
+      Math.ceil((scrollTop + safeContainerHeight) / LIST_ROW_HEIGHT) + LIST_OVERSCAN,
+    );
+
+    return {
+      startIndex,
+      endIndex,
+      topSpacerHeight: startIndex * LIST_ROW_HEIGHT,
+      bottomSpacerHeight: Math.max(0, (displayedNotes.length - endIndex) * LIST_ROW_HEIGHT),
+    };
+  }, [containerHeight, displayedNotes.length, scrollTop, viewMode]);
+
+  const visibleNotes =
+    viewMode === 'list' && visibleRange
+      ? displayedNotes.slice(visibleRange.startIndex, visibleRange.endIndex)
+      : displayedNotes;
 
   const handleDelete = async (noteId: string) => {
-    if (confirm('确定要删除此笔记吗？')) {
+    if (confirm('纭畾瑕佸垹闄ゆ绗旇鍚楋紵')) {
       await deleteNote(noteId);
     }
   };
@@ -75,13 +169,13 @@ function NoteList() {
     navigate('/notes/new');
   };
 
-  const renderNoteItem = (note: Note) => (
+  const renderNoteItem = (note: Note, className = '') => (
     <div
       key={note.id}
       onClick={() => navigate(`/notes/${note.id}`)}
       onMouseEnter={() => void prefetchNote(note.id)}
       onFocus={() => void prefetchNote(note.id)}
-      className={`note-item group ${viewMode === 'grid' ? 'rounded-lg border hover:shadow-md' : ''}`}
+      className={`note-item group ${viewMode === 'grid' ? 'rounded-lg border hover:shadow-md' : ''} ${className}`}
     >
       <div className="mb-2 flex items-start justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -157,7 +251,7 @@ function NoteList() {
         <div className="mb-3 flex items-center gap-3">
           <div className="flex-1">
             <Input
-              placeholder="搜索笔记..."
+              placeholder="鎼滅储绗旇..."
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
               icon={<Search size={18} />}
@@ -168,14 +262,14 @@ function NoteList() {
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-500'}`}
-              title="列表视图"
+              title="鍒楄〃瑙嗗浘"
             >
               <List size={18} />
             </button>
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-500'}`}
-              title="网格视图"
+              title="缃戞牸瑙嗗浘"
             >
               <Grid size={18} />
             </button>
@@ -183,13 +277,13 @@ function NoteList() {
 
           <Button onClick={handleCreateNote}>
             <Plus size={18} />
-            新建笔记
+            鏂板缓绗旇
           </Button>
         </div>
 
         {(selectedFolder || selectedTag) && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">筛选：</span>
+            <span className="text-sm text-gray-500">绛涢€夛細</span>
             {selectedFolder && (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-sm text-blue-700">
                 {folders.find((f) => f.id === selectedFolder)?.name}
@@ -197,7 +291,7 @@ function NoteList() {
                   onClick={() => setSelectedFolder(null)}
                   className="hover:text-blue-900"
                 >
-                  ×
+                  脳
                 </button>
               </span>
             )}
@@ -208,7 +302,7 @@ function NoteList() {
                   onClick={() => setSelectedTag(null)}
                   className="hover:text-gray-900"
                 >
-                  ×
+                  脳
                 </button>
               </span>
             )}
@@ -216,7 +310,11 @@ function NoteList() {
         )}
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
+      <div
+        ref={scrollContainerRef}
+        onScroll={viewMode === 'list' ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
+        className="flex-1 overflow-auto p-4"
+      >
         {loading ? (
           <div className="py-8 text-center text-gray-500">加载中...</div>
         ) : displayedNotes.length === 0 ? (
@@ -230,9 +328,19 @@ function NoteList() {
               </Button>
             )}
           </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            {displayedNotes.map((note) => renderNoteItem(note))}
+          </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4 lg:grid-cols-3' : ''}>
-            {displayedNotes.map(renderNoteItem)}
+          <div>
+            <div style={{ height: `${visibleRange?.topSpacerHeight ?? 0}px` }} />
+            {visibleNotes.map((note) => (
+              <div key={note.id} style={{ height: `${LIST_ROW_HEIGHT}px` }}>
+                {renderNoteItem(note, 'h-full overflow-hidden')}
+              </div>
+            ))}
+            <div style={{ height: `${visibleRange?.bottomSpacerHeight ?? 0}px` }} />
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFolderStore } from '../../store/folder.store';
 import { useTagStore } from '../../store/tag.store';
@@ -25,25 +25,65 @@ interface SidebarProps {
   selectedTag?: string | null;
 }
 
+const SIDEBAR_EXPANDED_FOLDERS_KEY = 'sidebar-expanded-folders';
+const SIDEBAR_FOLDER_QUERY_KEY = 'sidebar-folder-query';
+const SIDEBAR_TAG_QUERY_KEY = 'sidebar-tag-query';
+
+const readStoredArray = (key: string) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const readStoredText = (key: string) => {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+};
+
 function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: SidebarProps) {
   const navigate = useNavigate();
   const { folders, createFolder, deleteFolder } = useFolderStore();
   const { tags, createTag, deleteTag } = useTagStore();
 
-  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
+  const [expandedFolders, setExpandedFolders] = useState<string[]>(() =>
+    readStoredArray(SIDEBAR_EXPANDED_FOLDERS_KEY),
+  );
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showNewTag, setShowNewTag] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#6B7280');
-  const [folderQuery, setFolderQuery] = useState('');
-  const [tagQuery, setTagQuery] = useState('');
+  const [folderQuery, setFolderQuery] = useState(() => readStoredText(SIDEBAR_FOLDER_QUERY_KEY));
+  const [tagQuery, setTagQuery] = useState(() => readStoredText(SIDEBAR_TAG_QUERY_KEY));
   const [contextMenu, setContextMenu] = useState<{
     type: 'folder' | 'tag';
     id: string;
     x: number;
     y: number;
   } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_EXPANDED_FOLDERS_KEY, JSON.stringify(expandedFolders));
+  }, [expandedFolders]);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_FOLDER_QUERY_KEY, folderQuery);
+  }, [folderQuery]);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_TAG_QUERY_KEY, tagQuery);
+  }, [tagQuery]);
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) =>
