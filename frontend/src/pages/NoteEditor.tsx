@@ -349,7 +349,7 @@ function NoteEditor() {
   }
 
   return (
-    <div className="flex h-full gap-4 rounded-[24px] border border-stone-200/70 bg-white/45 p-1 backdrop-blur-md">
+    <div className="page-enter flex h-full gap-4 rounded-[24px] border border-stone-200/70 bg-white/45 p-1 backdrop-blur-md">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200/70 bg-white/70 p-3 backdrop-blur-md">
           <div className="flex items-center gap-2">

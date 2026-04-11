@@ -43,7 +43,7 @@ function Login() {
 
   return (
     <div className="nebula-shell flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="card w-full max-w-md p-8">
+      <div className="card page-enter w-full max-w-md p-8">
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-900 text-lg font-semibold text-white shadow-[0_14px_40px_rgba(63,44,24,0.24)]">
             N

@@ -107,7 +107,7 @@ function Settings() {
   ];
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="page-enter mx-auto max-w-4xl p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-stone-900">设置</h1>
         <p className="mt-1 text-sm text-stone-500">调整你的账号、编辑体验和界面风格</p>

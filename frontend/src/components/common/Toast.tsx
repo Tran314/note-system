@@ -46,7 +46,7 @@ export function Toast({
 
   return (
     <div
-      className={`fixed right-4 top-4 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-[0_20px_50px_rgba(63,44,24,0.16)] backdrop-blur-xl ${toneClasses[type]}`}
+      className={`surface-enter fixed right-4 top-4 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-[0_20px_50px_rgba(63,44,24,0.16)] backdrop-blur-xl ${toneClasses[type]}`}
     >
       <Icon size={18} />
       <span className="text-sm">{message}</span>

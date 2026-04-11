@@ -27,10 +27,13 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-[rgba(34,28,22,0.42)] backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="overlay-enter absolute inset-0 bg-[rgba(34,28,22,0.42)] backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <div
-        className={`nebula-panel-strong relative mx-4 w-full rounded-[28px] ${widths[width]}`}
+        className={`nebula-panel-strong surface-enter relative mx-4 w-full rounded-[28px] ${widths[width]}`}
       >
         {title && (
           <div className="border-b border-stone-200/70 px-6 py-4">

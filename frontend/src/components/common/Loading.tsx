@@ -8,15 +8,17 @@ interface LoadingProps {
 
 export function Loading({ text = '加载中...', fullScreen = false }: LoadingProps) {
   const content = (
-    <div className="flex flex-col items-center justify-center gap-2">
-      <Loader2 className="h-8 w-8 animate-spin text-stone-600" />
-      <span className="text-sm text-stone-500">{text}</span>
+    <div className="surface-enter flex flex-col items-center justify-center gap-3 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/60 shadow-[0_14px_36px_rgba(63,44,24,0.12)]">
+        <Loader2 className="h-6 w-6 animate-spin text-stone-600" />
+      </div>
+      <span className="text-sm tracking-[0.01em] text-stone-500">{text}</span>
     </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(247,242,235,0.72)] backdrop-blur-md">
+      <div className="overlay-enter fixed inset-0 z-50 flex items-center justify-center bg-[rgba(247,242,235,0.72)] backdrop-blur-md">
         {content}
       </div>
     );
@@ -32,17 +34,21 @@ interface EmptyProps {
   action?: ReactNode;
 }
 
-export function Empty({ 
-  icon, 
-  title = '暂无数据', 
+export function Empty({
+  icon,
+  title = '暂无数据',
   description,
-  action 
+  action,
 }: EmptyProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-stone-400">
-      {icon && <div className="mb-4 opacity-50">{icon}</div>}
-      <h3 className="mb-1 text-lg font-medium">{title}</h3>
-      {description && <p className="mb-4 text-sm">{description}</p>}
+    <div className="empty-state-shell page-enter py-12 text-stone-400">
+      {icon && (
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[22px] bg-white/55 text-stone-300 shadow-[0_16px_36px_rgba(63,44,24,0.08)]">
+          {icon}
+        </div>
+      )}
+      <h3 className="mb-2 text-xl font-medium text-stone-800">{title}</h3>
+      {description && <p className="mx-auto mb-5 max-w-md text-sm leading-6 text-stone-500">{description}</p>}
       {action}
     </div>
   );
