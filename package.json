@@ -26,6 +26,10 @@
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "cd backend && npm test",
     "test:frontend": "cd frontend && npm test -- --run",
+    "ci:local": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ci-local.ps1 -Mode safe",
+    "ci:local:full": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ci-local.ps1 -Mode full",
+    "ci:backend": "cd backend && npm run lint && npx tsc --noEmit && npm run build && npm test -- --runInBand src/modules/note/note.service.spec.ts",
+    "ci:frontend": "cd frontend && npm run lint && npx tsc --noEmit",
     
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
