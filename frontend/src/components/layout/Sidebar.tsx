@@ -32,10 +32,7 @@ const SIDEBAR_TAG_QUERY_KEY = 'sidebar-tag-query';
 const readStoredArray = (key: string) => {
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) {
-      return [];
-    }
-
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : [];
   } catch {
@@ -56,9 +53,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   const { folders, createFolder, deleteFolder } = useFolderStore();
   const { tags, createTag, deleteTag } = useTagStore();
 
-  const [expandedFolders, setExpandedFolders] = useState<string[]>(() =>
-    readStoredArray(SIDEBAR_EXPANDED_FOLDERS_KEY),
-  );
+  const [expandedFolders, setExpandedFolders] = useState<string[]>(() => readStoredArray(SIDEBAR_EXPANDED_FOLDERS_KEY));
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showNewTag, setShowNewTag] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -66,12 +61,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   const [newTagColor, setNewTagColor] = useState('#6B7280');
   const [folderQuery, setFolderQuery] = useState(() => readStoredText(SIDEBAR_FOLDER_QUERY_KEY));
   const [tagQuery, setTagQuery] = useState(() => readStoredText(SIDEBAR_TAG_QUERY_KEY));
-  const [contextMenu, setContextMenu] = useState<{
-    type: 'folder' | 'tag';
-    id: string;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ type: 'folder' | 'tag'; id: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_EXPANDED_FOLDERS_KEY, JSON.stringify(expandedFolders));
@@ -87,9 +77,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) =>
-      prev.includes(folderId)
-        ? prev.filter((id) => id !== folderId)
-        : [...prev, folderId],
+      prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId],
     );
   };
 
@@ -109,40 +97,22 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   };
 
   const filterFolderTree = (folderList: any[], query: string): any[] => {
-    if (!query.trim()) {
-      return folderList;
-    }
-
+    if (!query.trim()) return folderList;
     const normalizedQuery = query.toLowerCase().trim();
-
     return folderList
       .map((folder) => {
         const filteredChildren = filterFolderTree(folder.children || [], normalizedQuery);
         const matches = folder.name.toLowerCase().includes(normalizedQuery);
-
-        if (!matches && filteredChildren.length === 0) {
-          return null;
-        }
-
-        return {
-          ...folder,
-          children: filteredChildren,
-        };
+        if (!matches && filteredChildren.length === 0) return null;
+        return { ...folder, children: filteredChildren };
       })
       .filter(Boolean);
   };
 
-  const filteredFolders = useMemo(
-    () => filterFolderTree(folders, folderQuery),
-    [folders, folderQuery],
-  );
-
+  const filteredFolders = useMemo(() => filterFolderTree(folders, folderQuery), [folders, folderQuery]);
   const filteredTags = useMemo(() => {
     const normalizedQuery = tagQuery.toLowerCase().trim();
-    if (!normalizedQuery) {
-      return tags;
-    }
-
+    if (!normalizedQuery) return tags;
     return tags.filter((tag) => tag.name.toLowerCase().includes(normalizedQuery));
   }, [tags, tagQuery]);
 
@@ -155,9 +125,9 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
       return (
         <div key={folder.id}>
           <div
-            className={`group flex cursor-pointer items-center gap-1 rounded px-2 py-1.5
+            className={`group flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors
               ${level > 0 ? 'ml-4' : ''}
-              ${isSelected ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'}`}
+              ${isSelected ? 'bg-[#10a37f]/20 text-[#10a37f]' : 'hover:bg-[#363636]'}`}
             onClick={() => {
               onFolderSelect?.(folder.id);
               navigate(`/notes?folderId=${folder.id}`);
@@ -173,28 +143,25 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
                   e.stopPropagation();
                   toggleFolder(folder.id);
                 }}
-                className="rounded p-0.5 hover:bg-gray-300"
+                className="rounded p-0.5 hover:bg-[#363636]"
               >
                 {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </button>
             ) : (
               <span className="w-5" />
             )}
-
-            <Folder size={16} className={isSelected ? 'text-blue-600' : 'text-gray-500'} />
+            <Folder size={16} className={isSelected ? 'text-[#10a37f]' : 'text-[#888888]'} />
             <span className="flex-1 truncate text-sm">{folder.name}</span>
-
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setContextMenu({ type: 'folder', id: folder.id, x: e.clientX, y: e.clientY });
               }}
-              className="rounded p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-300"
+              className="rounded p-1 opacity-0 group-hover:opacity-100 hover:bg-[#363636]"
             >
               <MoreHorizontal size={14} />
             </button>
           </div>
-
           {hasChildren && isExpanded && renderFolderTree(folder.children, level + 1)}
         </div>
       );
@@ -202,22 +169,13 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   };
 
   const presetColors = [
-    '#EF4444',
-    '#F97316',
-    '#F59E0B',
-    '#84CC16',
-    '#10B981',
-    '#06B6D4',
-    '#3B82F6',
-    '#8B5CF6',
-    '#EC4899',
-    '#6B7280',
-    '#64748B',
-    '#1F2937',
+    '#EF4444', '#F97316', '#F59E0B', '#84CC16', '#10B981', '#06B6D4',
+    '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280', '#64748B', '#1F2937',
   ];
 
   return (
-    <aside className="nebula-panel flex h-full w-64 flex-col overflow-y-auto rounded-[28px] bg-white/40">
+    <aside className="sidebar flex h-full w-64 flex-col overflow-y-auto">
+      {/* 新建笔记按钮 */}
       <div className="p-3">
         <Button onClick={() => navigate('/notes/new')} className="w-full">
           <Plus size={16} />
@@ -225,71 +183,48 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
         </Button>
       </div>
 
-      <div className="px-2 py-1">
+      {/* 所有笔记 */}
+      <div className="px-3 py-1">
         <button
           onClick={() => {
             onFolderSelect?.(null);
             onTagSelect?.(null);
             navigate('/notes');
           }}
-          className={`flex w-full items-center gap-2 rounded px-2 py-1.5 ${
-            !selectedFolder && !selectedTag ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
+          className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
+            !selectedFolder && !selectedTag ? 'bg-[#10a37f]/20 text-[#10a37f]' : 'hover:bg-[#363636]'
           }`}
         >
-          <FileText size={16} className={!selectedFolder && !selectedTag ? 'text-blue-600' : 'text-gray-500'} />
+          <FileText size={16} className={!selectedFolder && !selectedTag ? 'text-[#10a37f]' : 'text-[#888888]'} />
           <span className="text-sm">所有笔记</span>
         </button>
       </div>
 
-      <div className="mt-2 px-2 py-1">
+      {/* 文件夹区域 */}
+      <div className="mt-2 px-3 py-1">
         <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs font-medium uppercase text-gray-500">文件夹</span>
-          <button
-            onClick={() => setShowNewFolder(true)}
-            className="rounded p-1 hover:bg-gray-200"
-            title="新建文件夹"
-          >
+          <span className="text-xs font-medium uppercase text-[#888888]">文件夹</span>
+          <button onClick={() => setShowNewFolder(true)} className="rounded p-1 hover:bg-[#363636]" title="新建文件夹">
             <Plus size={14} />
           </button>
         </div>
-
         <div className="px-2 pb-2">
-          <Input
-            placeholder="搜索文件夹..."
-            value={folderQuery}
-            onChange={(e) => setFolderQuery(e.target.value)}
-            icon={<Search size={14} />}
-          />
+          <Input placeholder="搜索文件夹..." value={folderQuery} onChange={(e) => setFolderQuery(e.target.value)} icon={<Search size={14} />} />
         </div>
-
-        {filteredFolders.length > 0 ? (
-          renderFolderTree(filteredFolders)
-        ) : (
-          <p className="px-2 py-1 text-sm text-gray-400">暂无匹配文件夹</p>
-        )}
+        {filteredFolders.length > 0 ? renderFolderTree(filteredFolders) : <p className="px-2 py-1 text-sm text-[#888888]">暂无匹配文件夹</p>}
       </div>
 
-      <div className="mt-2 flex-1 px-2 py-1">
+      {/* 标签区域 */}
+      <div className="mt-2 flex-1 px-3 py-1">
         <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs font-medium uppercase text-gray-500">标签</span>
-          <button
-            onClick={() => setShowNewTag(true)}
-            className="rounded p-1 hover:bg-gray-200"
-            title="新建标签"
-          >
+          <span className="text-xs font-medium uppercase text-[#888888]">标签</span>
+          <button onClick={() => setShowNewTag(true)} className="rounded p-1 hover:bg-[#363636]" title="新建标签">
             <Plus size={14} />
           </button>
         </div>
-
         <div className="px-2 pb-2">
-          <Input
-            placeholder="搜索标签..."
-            value={tagQuery}
-            onChange={(e) => setTagQuery(e.target.value)}
-            icon={<Search size={14} />}
-          />
+          <Input placeholder="搜索标签..." value={tagQuery} onChange={(e) => setTagQuery(e.target.value)} icon={<Search size={14} />} />
         </div>
-
         <div className="space-y-0.5">
           {filteredTags.map((tag) => {
             const isSelected = selectedTag === tag.id;
@@ -304,8 +239,8 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
                   e.preventDefault();
                   setContextMenu({ type: 'tag', id: tag.id, x: e.clientX, y: e.clientY });
                 }}
-                className={`group flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 ${
-                  isSelected ? 'bg-blue-100' : 'hover:bg-gray-200'
+                className={`group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
+                  isSelected ? 'bg-[#10a37f]/20' : 'hover:bg-[#363636]'
                 }`}
               >
                 <Tag size={14} style={{ color: tag.color }} />
@@ -314,103 +249,64 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
               </div>
             );
           })}
-          {filteredTags.length === 0 && (
-            <p className="px-2 py-1 text-sm text-gray-400">暂无匹配标签</p>
-          )}
+          {filteredTags.length === 0 && <p className="px-2 py-1 text-sm text-[#888888]">暂无匹配标签</p>}
         </div>
       </div>
 
-      <div className="mt-auto border-t border-gray-200 px-2 py-1">
-        <button
-          onClick={() => navigate('/notes?trash=true')}
-          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-gray-500 hover:bg-gray-200"
-        >
+      {/* 回收站 */}
+      <div className="mt-auto border-t border-[#3a3a3a] px-3 py-2">
+        <button onClick={() => navigate('/notes?trash=true')} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[#888888] hover:bg-[#363636]">
           <Trash2 size={16} />
           <span className="text-sm">回收站</span>
         </button>
       </div>
 
-      <Modal
-        isOpen={showNewFolder}
-        onClose={() => setShowNewFolder(false)}
-        title="新建文件夹"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowNewFolder(false)}>
-              取消
-            </Button>
-            <Button onClick={handleCreateFolder}>创建</Button>
-          </>
-        }
-      >
-        <Input
-          placeholder="文件夹名称"
-          value={newFolderName}
-          onChange={(e) => setNewFolderName(e.target.value)}
-          autoFocus
-        />
+      {/* 新建文件夹模态框 */}
+      <Modal isOpen={showNewFolder} onClose={() => setShowNewFolder(false)} title="新建文件夹" footer={
+        <>
+          <Button variant="ghost" onClick={() => setShowNewFolder(false)}>取消</Button>
+          <Button onClick={handleCreateFolder}>创建</Button>
+        </>
+      }>
+        <Input placeholder="文件夹名称" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
       </Modal>
 
-      <Modal
-        isOpen={showNewTag}
-        onClose={() => setShowNewTag(false)}
-        title="新建标签"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowNewTag(false)}>
-              取消
-            </Button>
-            <Button onClick={handleCreateTag}>创建</Button>
-          </>
-        }
-      >
+      {/* 新建标签模态框 */}
+      <Modal isOpen={showNewTag} onClose={() => setShowNewTag(false)} title="新建标签" footer={
+        <>
+          <Button variant="ghost" onClick={() => setShowNewTag(false)}>取消</Button>
+          <Button onClick={handleCreateTag}>创建</Button>
+        </>
+      }>
         <div className="space-y-3">
-          <Input
-            placeholder="标签名称"
-            value={newTagName}
-            onChange={(e) => setNewTagName(e.target.value)}
-            autoFocus
-          />
+          <Input placeholder="标签名称" value={newTagName} onChange={(e) => setNewTagName(e.target.value)} autoFocus />
           <div>
-            <label className="mb-2 block text-sm font-medium">标签颜色</label>
+            <label className="mb-2 block text-sm font-medium text-[#b4b4b4]">标签颜色</label>
             <div className="flex flex-wrap gap-2">
               {presetColors.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => setNewTagColor(color)}
-                  className={`h-6 w-6 rounded-full border-2 transition-transform ${
-                    newTagColor === color ? 'scale-110 border-gray-800' : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
+                <button key={color} onClick={() => setNewTagColor(color)} className={`h-6 w-6 rounded-full border-2 transition-transform ${
+                  newTagColor === color ? 'scale-110 border-white' : 'border-transparent'
+                }`} style={{ backgroundColor: color }} />
               ))}
             </div>
           </div>
         </div>
       </Modal>
 
+      {/* 右键菜单 */}
       {contextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
-          <div
-            className="fixed z-50 min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
-          >
-            <button
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-100"
-              onClick={() => setContextMenu(null)}
-            >
+          <div className="fixed z-50 min-w-[120px] rounded-md border border-[#3a3a3a] bg-[#242424] py-1 shadow-lg" style={{ left: contextMenu.x, top: contextMenu.y }}>
+            <button className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-[#363636]" onClick={() => setContextMenu(null)}>
               <Edit2 size={14} />
               重命名
             </button>
-            <button
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
-              onClick={async () => {
-                if (contextMenu.type === 'folder') await deleteFolder(contextMenu.id);
-                else await deleteTag(contextMenu.id);
-                setContextMenu(null);
-              }}
-            >
+            <button className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#ef4444] hover:bg-[#ef4444]/10" onClick={async () => {
+              if (contextMenu.type === 'folder') await deleteFolder(contextMenu.id);
+              else await deleteTag(contextMenu.id);
+              setContextMenu(null);
+            }}>
               <Trash2 size={14} />
               删除
             </button>

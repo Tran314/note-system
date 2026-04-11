@@ -4,11 +4,17 @@ import Header from './Header';
 
 function Layout() {
   return (
-    <div className="nebula-shell flex h-screen overflow-hidden px-3 py-3">
+    <div className="flex h-screen overflow-hidden bg-[#1a1a1a]">
+      {/* 侧边栏 */}
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden pl-3">
+
+      {/* 主内容区 */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* 头部 */}
         <Header />
-        <main className="nebula-panel mt-3 flex-1 overflow-y-auto rounded-[28px] p-6 nebula-main">
+
+        {/* 内容区域 */}
+        <main className="flex-1 overflow-y-auto bg-[#242424] p-4">
           <Outlet />
         </main>
       </div>

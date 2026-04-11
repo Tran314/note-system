@@ -11,13 +11,12 @@ const variants = {
   primary: 'btn-primary',
   secondary: 'btn-secondary',
   danger: 'btn-danger',
-  ghost:
-    'rounded-2xl bg-transparent text-stone-700 transition-all hover:bg-white/45 hover:text-stone-900',
+  ghost: 'btn-ghost',
 };
 
 const sizes = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2.5',
+  md: 'px-4 py-2',
   lg: 'px-6 py-3 text-lg',
 };
 
@@ -33,8 +32,8 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 font-medium transition-all
-        ${variants[variant]} ${sizes[size]} 
+      className={`inline-flex items-center justify-center gap-2 font-medium transition-colors
+        ${variants[variant]} ${sizes[size]}
         ${(disabled || loading) ? 'cursor-not-allowed opacity-50' : ''}
         ${className}`}
       disabled={disabled || loading}

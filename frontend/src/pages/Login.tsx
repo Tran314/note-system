@@ -42,21 +42,24 @@ function Login() {
   };
 
   return (
-    <div className="nebula-shell flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="card page-enter w-full max-w-md p-8">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-900 text-lg font-semibold text-white shadow-[0_14px_40px_rgba(63,44,24,0.24)]">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="card page-enter w-full max-w-md">
+        {/* Logo */}
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#10a37f] text-xl font-bold text-white">
             N
           </div>
-          <h2 className="text-3xl font-semibold tracking-tight text-stone-900">Nebula</h2>
-          <p className="mt-2 text-sm text-stone-500">回到你的私人笔记工作台</p>
+          <h1 className="text-2xl font-semibold">Nebula Note</h1>
+          <p className="mt-2 text-sm text-[#888888]">登录你的笔记工作台</p>
         </div>
 
+        {/* 登录表单 */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* 邮箱输入 */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-stone-700">邮箱</label>
+            <label className="mb-1.5 block text-sm font-medium text-[#b4b4b4]">邮箱</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" size={18} />
               <input
                 type="email"
                 {...register('email')}
@@ -64,39 +67,41 @@ function Login() {
                 className="input-field pl-10"
               />
             </div>
-            {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
+            {errors.email && <p className="mt-1 text-sm text-[#ef4444]">{errors.email.message}</p>}
           </div>
 
+          {/* 密码输入 */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-stone-700">密码</label>
+            <label className="mb-1.5 block text-sm font-medium text-[#b4b4b4]">密码</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" size={18} />
               <input
                 type="password"
                 {...register('password')}
-                placeholder="请输入密码"
+                placeholder="输入密码"
                 className="input-field pl-10"
               />
             </div>
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
-            )}
+            {errors.password && <p className="mt-1 text-sm text-[#ef4444]">{errors.password.message}</p>}
           </div>
 
+          {/* 错误提示 */}
           {error && (
-            <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50/90 p-3 text-red-600">
+            <div className="flex items-center gap-2 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 p-3 text-[#ef4444]">
               <AlertCircle size={18} />
               <span className="text-sm">{error}</span>
             </div>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
+          {/* 登录按钮 */}
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? '登录中...' : '登录'}
           </button>
 
-          <p className="text-center text-sm text-stone-500">
+          {/* 注册链接 */}
+          <p className="text-center text-sm text-[#888888]">
             还没有账号？
-            <Link to="/register" className="ml-1 text-stone-900 underline decoration-stone-300 underline-offset-4">
+            <Link to="/register" className="ml-1 text-[#10a37f] hover:underline">
               注册
             </Link>
           </p>
