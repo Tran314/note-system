@@ -18,6 +18,9 @@
     "dev:backend": "cd backend && npm run start:dev",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:desktop": "cd desktop && npm run dev",
+    "preview:local": "powershell -ExecutionPolicy Bypass -File .\\scripts\\preview-local.ps1",
+    "preview:local:skip-build": "powershell -ExecutionPolicy Bypass -File .\\scripts\\preview-local.ps1 -SkipBuild",
+    "preview:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\preview-stop.ps1",
     
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && npm run build",
