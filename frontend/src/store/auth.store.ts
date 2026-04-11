@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api } from '../services/api';
 import { User } from '../types/api.types';
+import { getStoredAccessToken, setStoredAccessToken } from '../utils/auth-storage';
 
 interface AuthState {
   user: User | null;
@@ -25,7 +26,7 @@ export const useAuthStore = create<AuthState>()(
         const payload = response.data?.data ?? response.data;
         const { user, accessToken } = payload;
 
-        localStorage.setItem('accessToken', accessToken);
+        setStoredAccessToken(accessToken);
         set({ user, accessToken, isAuthenticated: true });
       },
 
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
         const payload = response.data?.data ?? response.data;
         const { user, accessToken } = payload;
 
-        localStorage.setItem('accessToken', accessToken);
+        setStoredAccessToken(accessToken);
         set({ user, accessToken, isAuthenticated: true });
       },
 
@@ -43,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
         if (notifyServer && accessToken) {
           api.post('/auth/logout').catch(() => {});
         }
-        localStorage.removeItem('accessToken');
+        setStoredAccessToken(null);
         set({ user: null, accessToken: null, isAuthenticated: false });
       },
 
@@ -53,6 +54,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        const accessToken = state?.accessToken ?? getStoredAccessToken();
+        setStoredAccessToken(accessToken);
+      },
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
