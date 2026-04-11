@@ -27,29 +27,21 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className={`relative bg-white rounded-lg shadow-xl ${widths[width]} w-full mx-4`}>
-        {/* Header */}
+      <div className="absolute inset-0 bg-[rgba(34,28,22,0.42)] backdrop-blur-sm" onClick={onClose} />
+
+      <div
+        className={`nebula-panel-strong relative mx-4 w-full rounded-[28px] ${widths[width]}`}
+      >
         {title && (
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold">{title}</h3>
+          <div className="border-b border-stone-200/70 px-6 py-4">
+            <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
           </div>
         )}
-        
-        {/* Body */}
-        <div className="px-6 py-4">
-          {children}
-        </div>
-        
-        {/* Footer */}
+
+        <div className="px-6 py-5 text-stone-700">{children}</div>
+
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+          <div className="flex justify-end gap-2 border-t border-stone-200/70 px-6 py-4">
             {footer}
           </div>
         )}

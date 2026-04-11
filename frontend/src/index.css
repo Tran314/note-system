@@ -9,6 +9,9 @@
   --shell-panel-strong: rgba(255, 252, 248, 0.9);
   --shell-border: rgba(113, 92, 67, 0.14);
   --shell-shadow: 0 24px 80px rgba(63, 44, 24, 0.08);
+  --shell-shadow-soft: 0 14px 38px rgba(63, 44, 24, 0.09);
+  --shell-accent: #7b5d3f;
+  --shell-accent-strong: #5d4430;
 }
 
 body {
@@ -21,44 +24,74 @@ body {
   background-attachment: fixed;
 }
 
-/* 自定义样式 */
 @layer components {
-  /* 按钮样式 */
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply rounded-2xl px-4 py-2 text-white font-medium transition-all;
+    background: linear-gradient(180deg, #8b6a49 0%, #6f5238 100%);
+    box-shadow: 0 10px 24px rgba(92, 68, 48, 0.22);
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply rounded-2xl px-4 py-2 font-medium transition-all;
+    background: rgba(255, 251, 245, 0.78);
+    border: 1px solid rgba(113, 92, 67, 0.14);
+    color: #3a2d22;
+    box-shadow: var(--shell-shadow-soft);
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply rounded-2xl px-4 py-2 text-white font-medium transition-all;
+    background: linear-gradient(180deg, #d06255 0%, #b5473b 100%);
+    box-shadow: 0 10px 24px rgba(181, 71, 59, 0.2);
   }
 
-  /* 输入框样式 */
   .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    @apply w-full rounded-2xl px-4 py-2.5 transition-all focus:border-transparent focus:outline-none;
+    border: 1px solid rgba(113, 92, 67, 0.14);
+    background: rgba(255, 252, 248, 0.74);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   }
 
-  /* 卡片样式 */
+  .input-field:focus {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      0 0 0 4px rgba(123, 93, 63, 0.12);
+  }
+
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply rounded-[24px] p-6;
+    background: rgba(255, 251, 245, 0.72);
+    border: 1px solid rgba(113, 92, 67, 0.14);
+    box-shadow: var(--shell-shadow-soft);
+    backdrop-filter: blur(18px);
   }
 
-  /* 侧边栏样式 */
   .sidebar {
-    @apply bg-gray-100 h-full w-64 border-r border-gray-200;
+    @apply h-full w-64;
+    background: rgba(255, 250, 243, 0.68);
+    border-right: 1px solid rgba(113, 92, 67, 0.12);
   }
 
-  /* 笔记列表项 */
   .note-item {
-    @apply p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors;
+    @apply cursor-pointer border-b p-4 transition-all;
+    border-color: rgba(113, 92, 67, 0.08);
   }
 
-.note-item-active {
-  @apply bg-blue-50 border-l-4 border-blue-600;
+  .note-item:hover {
+    background: rgba(255, 249, 241, 0.66);
   }
+
+  .note-item-active {
+    @apply border-l-4;
+    background: rgba(236, 226, 213, 0.95);
+    border-left-color: var(--shell-accent);
+  }
+}
+
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-danger:hover {
+  transform: translateY(-1px);
 }
 
 .nebula-shell {
@@ -113,7 +146,6 @@ body {
     rgba(255, 255, 255, 0.22);
 }
 
-/* TipTap 编辑器样式 */
 .ProseMirror {
   min-height: 300px;
   padding: 1rem;
@@ -132,7 +164,6 @@ body {
   outline: none;
 }
 
-/* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
