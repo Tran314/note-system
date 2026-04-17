@@ -34,7 +34,7 @@ jobs:
           echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Note System Docs</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify/lib/themes/vue.css"></head><body><div id="app"></div><script>window.$docsify={loadSidebar:"_sidebar.md",name:"Note System",repo:"your-github-username/note-system"};</script><script src="https://cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script></body></html>' > docs/index.html
       
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
