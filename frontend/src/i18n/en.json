@@ -13,7 +13,22 @@
     "confirm": "Confirm",
     "success": "Success",
     "error": "Error",
-    "warning": "Warning"
+    "warning": "Warning",
+    "toggleDark": "Toggle dark mode",
+    "toggleLight": "Toggle light mode",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "user": "User",
+    "logout": "Logout",
+    "back": "Back",
+    "unsaved": "Unsaved",
+    "saved": "Saved",
+    "titlePlaceholder": "Note title",
+    "addLink": "Add link",
+    "addImage": "Add image",
+    "pasteImageHint": "Or paste image (Ctrl/Cmd + V)",
+    "filter": "Filter",
+    "rename": "Rename"
   },
   "auth": {
     "login": "Login",

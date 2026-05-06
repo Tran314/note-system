@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useFolderStore } from '../../store/folder.store';
 import { useTagStore } from '../../store/tag.store';
 import { Folder, Tag, Plus, ChevronRight, ChevronDown, FileText, Trash2, Edit2, MoreHorizontal } from 'lucide-react';
@@ -15,6 +16,7 @@ interface SidebarProps {
 }
 
 function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: SidebarProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { folders, createFolder, deleteFolder } = useFolderStore();
   const { tags, createTag, deleteTag } = useTagStore();
@@ -115,15 +117,13 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
 
   return (
     <aside className="w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col h-full">
-      {/* 新建笔记按钮 */}
       <div className="p-3">
         <Button onClick={() => navigate('/notes/new')} className="w-full">
           <Plus size={16} />
-          新建笔记
+          {t('notes.newNote')}
         </Button>
       </div>
 
-      {/* 所有笔记 */}
       <div className="px-2 py-1">
         <button
           onClick={() => {
@@ -137,29 +137,27 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
               : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
         >
           <FileText size={16} className={!selectedFolder && !selectedTag ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
-          <span className="text-sm">所有笔记</span>
+          <span className="text-sm">{t('notes.allNotes')}</span>
         </button>
       </div>
 
-      {/* 文件夹列表 */}
       <div className="px-2 py-1 mt-2">
         <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">文件夹</span>
-          <button onClick={() => setShowNewFolder(true)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="新建文件夹">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('folders.folders')}</span>
+          <button onClick={() => setShowNewFolder(true)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title={t('folders.newFolder')}>
             <Plus size={14} />
           </button>
         </div>
         
         {folders.length > 0 ? renderFolderTree(folders) : (
-          <p className="text-sm text-gray-400 dark:text-gray-500 px-2 py-1">暂无文件夹</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 px-2 py-1">{t('folders.noFolders')}</p>
         )}
       </div>
 
-      {/* 标签列表 */}
       <div className="px-2 py-1 mt-2 flex-1">
         <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">标签</span>
-          <button onClick={() => setShowNewTag(true)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="新建标签">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('tags.tags')}</span>
+          <button onClick={() => setShowNewTag(true)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title={t('tags.newTag')}>
             <Plus size={14} />
           </button>
         </div>
@@ -188,43 +186,40 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
             );
           })}
           {tags.length === 0 && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 px-2 py-1">暂无标签</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 px-2 py-1">{t('tags.noTags')}</p>
           )}
         </div>
       </div>
 
-      {/* 回收站 */}
       <div className="px-2 py-1 border-t border-gray-200 dark:border-gray-700 mt-auto">
         <button
           onClick={() => navigate('/notes?trash=true')}
           className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
         >
           <Trash2 size={16} />
-          <span className="text-sm">回收站</span>
+          <span className="text-sm">{t('notes.trash')}</span>
         </button>
       </div>
 
-      {/* 新建文件夹弹窗 */}
-      <Modal isOpen={showNewFolder} onClose={() => setShowNewFolder(false)} title="新建文件夹" footer={
+      <Modal isOpen={showNewFolder} onClose={() => setShowNewFolder(false)} title={t('folders.newFolder')} footer={
         <>
-          <Button variant="ghost" onClick={() => setShowNewFolder(false)}>取消</Button>
-          <Button onClick={handleCreateFolder}>创建</Button>
+          <Button variant="ghost" onClick={() => setShowNewFolder(false)}>{t('common.cancel')}</Button>
+          <Button onClick={handleCreateFolder}>{t('common.create')}</Button>
         </>
       }>
-        <Input placeholder="文件夹名称" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
+        <Input placeholder={t('folders.folderNamePlaceholder')} value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
       </Modal>
 
-      {/* 新建标签弹窗 */}
-      <Modal isOpen={showNewTag} onClose={() => setShowNewTag(false)} title="新建标签" footer={
+      <Modal isOpen={showNewTag} onClose={() => setShowNewTag(false)} title={t('tags.newTag')} footer={
         <>
-          <Button variant="ghost" onClick={() => setShowNewTag(false)}>取消</Button>
-          <Button onClick={handleCreateTag}>创建</Button>
+          <Button variant="ghost" onClick={() => setShowNewTag(false)}>{t('common.cancel')}</Button>
+          <Button onClick={handleCreateTag}>{t('common.create')}</Button>
         </>
       }>
         <div className="space-y-3">
-          <Input placeholder="标签名称" value={newTagName} onChange={(e) => setNewTagName(e.target.value)} autoFocus />
+          <Input placeholder={t('tags.tagNamePlaceholder')} value={newTagName} onChange={(e) => setNewTagName(e.target.value)} autoFocus />
           <div>
-            <label className="block text-sm font-medium mb-2">标签颜色</label>
+            <label className="block text-sm font-medium mb-2">{t('tags.tagColor')}</label>
             <div className="flex flex-wrap gap-2">
               {presetColors.map((color) => (
                 <button key={color} onClick={() => setNewTagColor(color)}
@@ -237,7 +232,6 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
         </div>
       </Modal>
 
-      {/* 右键菜单 */}
       {contextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
@@ -246,7 +240,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
           >
             <button className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2" onClick={() => setContextMenu(null)}>
               <Edit2 size={14} />
-              重命名
+              {t('common.rename')}
             </button>
             <button className="w-full px-3 py-1.5 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2"
               onClick={async () => {
@@ -256,7 +250,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
               }}
             >
               <Trash2 size={14} />
-              删除
+              {t('common.delete')}
             </button>
           </div>
         </>

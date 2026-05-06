@@ -2,16 +2,40 @@ import { create } from 'zustand';
 import { Note } from '../types/note.types';
 import { noteService } from '../services/note.service';
 
+interface NoteQueryParams {
+  folderId?: string;
+  tagId?: string;
+  keyword?: string;
+  isPinned?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+interface CreateNoteData {
+  title: string;
+  content?: string;
+  folderId?: string;
+  tags?: string[];
+}
+
+interface UpdateNoteData {
+  title?: string;
+  content?: string;
+  folderId?: string;
+  isPinned?: boolean;
+  tags?: string[];
+}
+
 interface NoteState {
   notes: Note[];
   currentNote: Note | null;
   loading: boolean;
   total: number;
   page: number;
-  fetchNotes: (params?: any) => Promise<void>;
+  fetchNotes: (params?: NoteQueryParams) => Promise<void>;
   fetchNote: (id: string) => Promise<void>;
-  createNote: (data: any) => Promise<Note>;
-  updateNote: (id: string, data: any) => Promise<void>;
+  createNote: (data: CreateNoteData) => Promise<Note>;
+  updateNote: (id: string, data: UpdateNoteData) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   restoreNote: (id: string) => Promise<void>;
   setPage: (page: number) => void;
@@ -24,7 +48,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   total: 0,
   page: 1,
 
-  fetchNotes: async (params?: any) => {
+  fetchNotes: async (params?: NoteQueryParams) => {
     set({ loading: true });
     try {
       const response = await noteService.getNotes({ ...params, page: get().page });
@@ -47,7 +71,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     }
   },
 
-  createNote: async (data: any) => {
+  createNote: async (data: CreateNoteData) => {
     try {
       const response = await noteService.createNote(data);
       const newNote = response.data;
@@ -59,7 +83,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     }
   },
 
-  updateNote: async (id: string, data: any) => {
+  updateNote: async (id: string, data: UpdateNoteData) => {
     try {
       const response = await noteService.updateNote(id, data);
       const updatedNote = response.data;

@@ -46,25 +46,41 @@ docker-compose down --remove-orphans
 echo "🟢 Starting new containers..."
 docker-compose up -d
 
-# Wait for health check
+# Wait for health check with retry
 echo "⏳ Waiting for services to be healthy..."
-sleep 10
+MAX_RETRIES=12
+RETRY_COUNT=0
 
-# Check backend health
 echo "🔍 Checking backend health..."
-if curl -f http://localhost:3001/health > /dev/null 2>&1; then
-    echo "✅ Backend is healthy"
-else
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
+        echo "✅ Backend is healthy"
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo "   Backend retry $RETRY_COUNT/$MAX_RETRIES..."
+    sleep 5
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Backend health check failed"
     docker-compose logs backend
     exit 1
 fi
 
-# Check frontend health
+RETRY_COUNT=0
 echo "🔍 Checking frontend health..."
-if curl -f http://localhost:3000 > /dev/null 2>&1; then
-    echo "✅ Frontend is healthy"
-else
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+        echo "✅ Frontend is healthy"
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo "   Frontend retry $RETRY_COUNT/$MAX_RETRIES..."
+    sleep 5
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Frontend health check failed"
     docker-compose logs frontend
     exit 1

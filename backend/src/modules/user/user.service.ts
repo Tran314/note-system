@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 import * as bcrypt from 'bcrypt';
-import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
@@ -77,7 +77,7 @@ export class UserService {
   }
 
   // 更新用户设置
-  async updateSettings(userId: string, settings: any) {
+  async updateSettings(userId: string, settings: UpdateSettingsDto) {
     const userSettings = await this.prisma.userSettings.update({
       where: { userId },
       data: settings,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
@@ -17,7 +17,7 @@ export class TagService {
     });
 
     if (existingTag) {
-      throw new Error('标签名已存在');
+      throw new ConflictException('标签名已存在');
     }
 
     const tag = await this.prisma.tag.create({
@@ -60,7 +60,7 @@ export class TagService {
     });
 
     if (!tag) {
-      throw new Error('标签不存在');
+      throw new NotFoundException('标签不存在');
     }
 
     return tag;
@@ -77,7 +77,7 @@ export class TagService {
       });
 
       if (existingTag) {
-        throw new Error('标签名已存在');
+        throw new ConflictException('标签名已存在');
       }
     }
 
@@ -96,7 +96,7 @@ export class TagService {
     });
 
     if (!tag) {
-      throw new Error('标签不存在');
+      throw new NotFoundException('标签不存在');
     }
 
     // 删除关联关系
@@ -124,7 +124,7 @@ export class TagService {
     });
 
     if (!note || !tag) {
-      throw new Error('笔记或标签不存在');
+      throw new NotFoundException('笔记或标签不存在');
     }
 
     // 检查是否已关联
@@ -133,7 +133,7 @@ export class TagService {
     });
 
     if (existingRelation) {
-      throw new Error('笔记已有此标签');
+      throw new ConflictException('笔记已有此标签');
     }
 
     // 创建关联

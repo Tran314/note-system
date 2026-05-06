@@ -21,18 +21,24 @@ data:
 
 ---
 # Secret for sensitive data
+# NOTE: In production, use external secrets management (Sealed Secrets, External Secrets Operator, etc.)
+# Values below are base64 encoded. Replace with your own secure values!
 apiVersion: v1
 kind: Secret
 metadata:
   name: note-secrets
   namespace: note-system
 type: Opaque
-stringData:
-  DATABASE_URL: "postgresql://noteuser:notepass123@postgres:5432/notesystem?schema=public"
-  REDIS_HOST: "redis"
-  REDIS_PORT: "6379"
-  REDIS_PASSWORD: "redispass123"
-  JWT_SECRET: "change-this-in-production"
+data:
+  # Base64 encoded values - REPLACE WITH YOUR OWN SECURE VALUES
+  # echo -n 'your-value' | base64
+  DB_USER: bm90ZXVzZXI=
+  DB_PASSWORD: bm90ZXBhc3MxMjM=
+  DATABASE_URL: cG9zdGdyZXNxbDovL25vdGV1c2VyOm5vdGVwYXNzMTIzQHBvc3RncmVzOjU0MzIvbm90ZXN5c3RlbT9zY2hlbWE9cHVibGlj
+  REDIS_HOST: cmVkaXM=
+  REDIS_PORT: NjM3OQ==
+  REDIS_PASSWORD: cmVkaXNwYXNzMTIz
+  JWT_SECRET: cmVwbGFjZS13aXRoLXlvdXItb3duLXNlY3VyZS1yYW5kb20tc2VjcmV0LWtleQ==
 
 ---
 # PostgreSQL Deployment
@@ -111,7 +117,13 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
-          command: ["redis-server", "--appendonly", "yes"]
+          command: ["redis-server", "--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: note-secrets
+                  key: REDIS_PASSWORD
           ports:
             - containerPort: 6379
           volumeMounts:
@@ -155,7 +167,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: your-docker-username/note-system-backend:latest
+          image: ${DOCKER_REGISTRY:-your-docker-username}/note-system-backend:${IMAGE_TAG:-latest}
           envFrom:
             - configMapRef:
                 name: note-config
@@ -209,7 +221,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: your-docker-username/note-system-frontend:latest
+          image: ${DOCKER_REGISTRY:-your-docker-username}/note-system-frontend:${IMAGE_TAG:-latest}
           ports:
             - containerPort: 80
 

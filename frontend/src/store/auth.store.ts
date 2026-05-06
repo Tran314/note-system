@@ -25,7 +25,6 @@ export const useAuthStore = create<AuthState>()(
         const response = await api.post('/auth/login', { email, password });
         const { user, accessToken } = response.data.data;
 
-        localStorage.setItem('accessToken', accessToken);
         set({ user, accessToken, isAuthenticated: true });
       },
 
@@ -33,7 +32,6 @@ export const useAuthStore = create<AuthState>()(
         const response = await api.post('/auth/register', { email, password, nickname });
         const { user, accessToken } = response.data.data;
 
-        localStorage.setItem('accessToken', accessToken);
         set({ user, accessToken, isAuthenticated: true });
       },
 
@@ -42,7 +40,6 @@ export const useAuthStore = create<AuthState>()(
         if (accessToken) {
           api.post('/auth/logout').catch(() => {});
         }
-        localStorage.removeItem('accessToken');
         set({ user: null, accessToken: null, isAuthenticated: false });
       },
 
@@ -54,7 +51,6 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/auth/refresh');
           const { accessToken } = response.data.data;
-          localStorage.setItem('accessToken', accessToken);
           set({ accessToken });
         } catch (error) {
           get().logout();

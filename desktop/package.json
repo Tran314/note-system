@@ -17,7 +17,7 @@
     "dist:linux": "npm run build && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
     "lint": "eslint src/",
-    "clean": "rm -rf dist release"
+    "clean": "rimraf dist release"
   },
   "dependencies": {
     "electron-log": "^5.0.1",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
+    "rimraf": "^5.0.5",
     "typescript": "^5.3.3"
   },
   "build": {

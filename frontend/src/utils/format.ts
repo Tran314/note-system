@@ -137,5 +137,8 @@ export function isImageUrl(url: string): boolean {
 
 // 生成唯一 ID
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 9);
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 }

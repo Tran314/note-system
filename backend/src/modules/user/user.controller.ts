@@ -9,6 +9,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CurrentUser } from '../../common';
 
 @ApiTags('用户')
@@ -45,7 +46,7 @@ export class UserController {
   @ApiOperation({ summary: '更新用户设置' })
   async updateSettings(
     @CurrentUser('sub') userId: string,
-    @Body() settings: any,
+    @Body() settings: UpdateSettingsDto,
   ) {
     return this.userService.updateSettings(userId, settings);
   }

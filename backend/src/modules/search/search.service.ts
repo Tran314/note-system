@@ -9,9 +9,10 @@ export class SearchService {
     return this.prisma.note.findMany({
       where: {
         userId,
+        isDeleted: false,
         OR: [
-          { title: { contains: keyword } },
-          { content: { contains: keyword } },
+          { title: { contains: keyword, mode: 'insensitive' } },
+          { content: { contains: keyword, mode: 'insensitive' } },
         ],
       },
     });

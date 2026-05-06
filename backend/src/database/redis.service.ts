@@ -15,6 +15,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     this.client = createClient({
       url: `redis://${host}:${port}`,
+      password: password,
     });
 
     this.client.on('error', (err) => console.error('Redis Client Error:', err));

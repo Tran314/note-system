@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -47,7 +47,7 @@ export class FolderService {
     });
 
     if (!folder) {
-      throw new Error('文件夹不存在');
+      throw new NotFoundException('文件夹不存在');
     }
 
     return folder;
@@ -74,17 +74,11 @@ export class FolderService {
     });
 
     if (!folder) {
-      throw new Error('文件夹不存在');
+      throw new NotFoundException('文件夹不存在');
     }
 
-    // 递归删除子文件夹
-    const children = await this.prisma.folder.findMany({
-      where: { parentId: folderId },
-    });
-
-    for (const child of children) {
-      await this.remove(userId, child.id);
-    }
+    // 递归删除子文件夹（限制深度为 10）
+    await this.removeChildFolders(userId, folderId, 1);
 
     // 软删除文件夹内的笔记
     await this.prisma.note.updateMany({
@@ -98,6 +92,30 @@ export class FolderService {
     });
 
     return { message: '文件夹已删除' };
+  }
+
+  // 递归删除子文件夹（带深度限制）
+  private async removeChildFolders(userId: string, folderId: string, depth: number) {
+    if (depth > 10) {
+      return;
+    }
+
+    const children = await this.prisma.folder.findMany({
+      where: { parentId: folderId },
+    });
+
+    for (const child of children) {
+      await this.removeChildFolders(userId, child.id, depth + 1);
+    }
+
+    await this.prisma.note.updateMany({
+      where: { folderId, userId },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
+
+    await this.prisma.folder.delete({
+      where: { id: folderId },
+    });
   }
 
   // 构建树形结构

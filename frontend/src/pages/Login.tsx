@@ -3,17 +3,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/auth.store';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email('邮箱格式不正确'),
-  password: z.string().min(6, '密码至少6位'),
+  email: z.string().email('auth.invalidEmail'),
+  password: z.string().min(6, 'auth.passwordTooShort'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
 
 function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [error, setError] = useState('');
@@ -35,7 +37,7 @@ function Login() {
       await login(data.email, data.password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || '登录失败');
+      setError(err.response?.data?.message || t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -44,44 +46,41 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="card w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6">📝 笔记系统</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">📝 {t('common.appName')}</h2>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          // 邮箱输入
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">邮箱</label>
+            <label className="block text-sm font-medium mb-1">{t('auth.email')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 text-gray-400" size={18} />
               <input
                 type="email"
                 {...register('email')}
-                placeholder="user@example.com"
+                placeholder={t('auth.emailPlaceholder')}
                 className="input-field pl-10"
               />
             </div>
             {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+              <p className="text-red-500 text-sm mt-1">{t(errors.email.message as string)}</p>
             )}
           </div>
 
-          // 密码输入
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">密码</label>
+            <label className="block text-sm font-medium mb-1">{t('auth.password')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 text-gray-400" size={18} />
               <input
                 type="password"
                 {...register('password')}
-                placeholder="请输入密码"
+                placeholder={t('auth.passwordPlaceholder')}
                 className="input-field pl-10"
               />
             </div>
             {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+              <p className="text-red-500 text-sm mt-1">{t(errors.password.message as string)}</p>
             )}
           </div>
 
-          // 错误提示
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
               <AlertCircle size={18} />
@@ -89,20 +88,18 @@ function Login() {
             </div>
           )}
 
-          // 登录按钮
           <button
             type="submit"
             disabled={loading}
             className="btn-primary w-full disabled:opacity-50"
           >
-            {loading ? '登录中...' : '登录'}
+            {loading ? t('common.loading') : t('auth.login')}
           </button>
 
-          // 注册链接
           <p className="text-center text-sm text-gray-500 mt-4">
-            还没有账号？
+            {t('auth.noAccount')}
             <Link to="/register" className="text-blue-600 hover:underline ml-1">
-              注册
+              {t('auth.register')}
             </Link>
           </p>
         </form>

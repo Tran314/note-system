@@ -199,7 +199,7 @@ export class NoteService {
     });
 
     if (!note) {
-      throw new Error('笔记不存在或未删除');
+      throw new NotFoundException('笔记不存在或未删除');
     }
 
     const restoredNote = await this.prisma.note.update({
@@ -224,13 +224,28 @@ export class NoteService {
     return versions;
   }
 
-  // 获取回收站笔记列表
-  async getTrash(userId: string) {
-    const notes = await this.prisma.note.findMany({
-      where: { userId, isDeleted: true },
-      orderBy: { deletedAt: 'desc' },
-    });
+  // 获取回收站笔记列表（带分页）
+  async getTrash(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
 
-    return notes;
+    const [notes, total] = await Promise.all([
+      this.prisma.note.findMany({
+        where: { userId, isDeleted: true },
+        orderBy: { deletedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.note.count({ where: { userId, isDeleted: true } }),
+    ]);
+
+    return {
+      notes,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

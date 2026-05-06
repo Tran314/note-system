@@ -1,7 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './database/prisma.module';
 import { RedisModule } from './database/redis.module';
@@ -16,6 +16,10 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 @Module({
   imports: [
@@ -70,6 +74,26 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    // 全局角色守卫
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    // 全局异常过滤器
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    // 全局 Prisma 异常过滤器
+    {
+      provide: APP_FILTER,
+      useClass: PrismaExceptionFilter,
+    },
+    // 全局响应转换拦截器
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
     },
   ],
 })

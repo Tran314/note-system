@@ -32,6 +32,18 @@ export class AttachmentService {
       throw new BadRequestException('文件大小超过限制（10MB）');
     }
 
+    // 验证文件类型
+    const allowedMimeTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+      'application/pdf',
+      'text/plain', 'text/csv',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('不支持的文件类型');
+    }
+
     // 生成唯一文件名
     const ext = path.extname(file.originalname);
     const uniqueFilename = `${uuidv4()}${ext}`;
