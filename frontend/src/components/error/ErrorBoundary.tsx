@@ -1,4 +1,5 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
+import i18n from '../../i18n';
 
 interface Props {
   children: ReactNode;
@@ -22,7 +23,6 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    // 可以在这里上报错误到 Sentry 等
   }
 
   render() {
@@ -30,13 +30,13 @@ class ErrorBoundary extends Component<Props, State> {
       return this.props.fallback || (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="card max-w-md text-center">
-            <h2 className="text-xl font-bold text-red-600 mb-4">出错了</h2>
-            <p className="text-gray-500 mb-4">页面发生错误，请刷新或重试</p>
+            <h2 className="text-xl font-bold text-red-600 mb-4">{i18n.t('errors.serverError')}</h2>
+            <p className="text-gray-500 mb-4">{i18n.t('errors.tryAgain')}</p>
             <button
               onClick={() => window.location.reload()}
               className="btn-primary"
             >
-              刷新页面
+              {i18n.t('errors.goHome')}
             </button>
           </div>
         </div>

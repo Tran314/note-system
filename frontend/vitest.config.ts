@@ -16,6 +16,12 @@ export default defineConfig({
       exclude: [
         'node_modules/',
         'src/setupTests.ts',
+        '**/*.d.ts',
+        '**/*.config.*',
+        'src/types/**',
+        'src/workers/**',
+        'src/i18n/**',
+        'e2e/**',
       ],
     },
   },

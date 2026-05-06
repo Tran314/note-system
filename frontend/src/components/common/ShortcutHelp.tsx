@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from './Button';
 import { Modal } from './Modal';
 
@@ -7,23 +8,25 @@ interface ShortcutHelpProps {
 }
 
 function ShortcutHelp({ isOpen, onClose }: ShortcutHelpProps) {
+  const { t } = useTranslation();
+
   const shortcuts = [
-    { key: 'Ctrl + S', description: '保存笔记' },
-    { key: 'Ctrl + B', description: '加粗文本' },
-    { key: 'Ctrl + I', description: '斜体文本' },
-    { key: 'Ctrl + K', description: '插入链接' },
-    { key: 'Ctrl + N', description: '新建笔记' },
-    { key: 'Ctrl + Shift + K', description: '搜索笔记' },
-    { key: 'Esc', description: '关闭弹窗/返回' },
+    { key: 'Ctrl + S', description: t('shortcuts.saveNote') },
+    { key: 'Ctrl + B', description: t('shortcuts.boldText') },
+    { key: 'Ctrl + I', description: t('shortcuts.italicText') },
+    { key: 'Ctrl + K', description: t('shortcuts.insertLink') },
+    { key: 'Ctrl + N', description: t('shortcuts.newNote') },
+    { key: 'Ctrl + Shift + K', description: t('shortcuts.searchNotes') },
+    { key: 'Esc', description: t('shortcuts.closeDialog') },
   ];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="键盘快捷键"
+      title={t('shortcuts.shortcuts')}
       footer={
-        <Button onClick={onClose}>关闭</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
       }
     >
       <div className="space-y-2">

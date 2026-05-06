@@ -4,7 +4,6 @@ import { initReactI18next } from 'react-i18next';
 import en from './en.json';
 import zh from './zh.json';
 
-// 获取存储的语言设置
 const savedLanguage = localStorage.getItem('nebula-language') || 'zh';
 
 i18n
@@ -21,13 +20,15 @@ i18n
     },
   });
 
-// 语言切换函数
+i18n.on('languageChanged', (lng) => {
+  document.documentElement.lang = lng;
+});
+
 export const changeLanguage = (lang: 'en' | 'zh') => {
   i18n.changeLanguage(lang);
   localStorage.setItem('nebula-language', lang);
 };
 
-// 获取当前语言
 export const getCurrentLanguage = (): 'en' | 'zh' => {
   return (i18n.language as 'en' | 'zh') || 'zh';
 };
