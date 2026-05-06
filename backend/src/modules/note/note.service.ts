@@ -215,6 +215,15 @@ export class NoteService {
 
   // 获取历史版本
   async getVersions(userId: string, noteId: string) {
+    // 验证笔记属于当前用户
+    const note = await this.prisma.note.findFirst({
+      where: { id: noteId, userId },
+    });
+
+    if (!note) {
+      throw new NotFoundException('笔记不存在');
+    }
+
     const versions = await this.prisma.noteVersion.findMany({
       where: { noteId },
       orderBy: { version: 'desc' },

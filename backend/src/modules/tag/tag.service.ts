@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
@@ -146,6 +146,19 @@ export class TagService {
 
   // 从笔记移除标签
   async removeFromNote(userId: string, noteId: string, tagId: string) {
+    // 验证笔记和标签都属于当前用户
+    const note = await this.prisma.note.findFirst({
+      where: { id: noteId, userId },
+    });
+
+    const tag = await this.prisma.tag.findFirst({
+      where: { id: tagId, userId },
+    });
+
+    if (!note || !tag) {
+      throw new NotFoundException('笔记或标签不存在或不属于当前用户');
+    }
+
     await this.prisma.noteTag.delete({
       where: { noteId_tagId: { noteId, tagId } },
     });

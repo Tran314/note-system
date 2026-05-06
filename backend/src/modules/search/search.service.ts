@@ -22,7 +22,7 @@ export class SearchService {
     return this.prisma.folder.findMany({
       where: {
         userId,
-        name: { contains: keyword },
+        name: { contains: keyword, mode: 'insensitive' },
       },
     });
   }
@@ -31,15 +31,17 @@ export class SearchService {
     return this.prisma.tag.findMany({
       where: {
         userId,
-        name: { contains: keyword },
+        name: { contains: keyword, mode: 'insensitive' },
       },
     });
   }
 
   async globalSearch(keyword: string, userId: string) {
-    const notes = await this.searchNotes(keyword, userId);
-    const folders = await this.searchFolders(keyword, userId);
-    const tags = await this.searchTags(keyword, userId);
+    const [notes, folders, tags] = await Promise.all([
+      this.searchNotes(keyword, userId),
+      this.searchFolders(keyword, userId),
+      this.searchTags(keyword, userId),
+    ]);
 
     return { notes, folders, tags };
   }

@@ -6,12 +6,13 @@ set -e
 
 echo "🚀 开始部署笔记系统..."
 
-# 进入后端目录
-cd /root/.openclaw/workspace/projects/note-system/backend
+# 获取脚本所在目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
-# 安装依赖
+# 安装依赖（使用 npm ci 确保可重复性）
 echo "📦 安装后端依赖..."
-npm install --production
+npm ci --production
 
 # 生成 Prisma 客户端
 echo "🔧 生成 Prisma 客户端..."
@@ -28,10 +29,14 @@ npm run build
 # 创建日志目录
 mkdir -p logs
 
-# 使用 PM2 启动
+# 使用 PM2 启动/重载
 echo "🚀 启动服务..."
 if command -v pm2 &> /dev/null; then
-    pm2 start ecosystem.config.js
+    if pm2 list | grep -q "note-system-backend"; then
+        pm2 reload ecosystem.config.js
+    else
+        pm2 start ecosystem.config.js
+    fi
     pm2 save
 else
     echo "⚠️ PM2 未安装，使用 node 直接启动"

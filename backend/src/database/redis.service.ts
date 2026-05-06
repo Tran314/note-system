@@ -75,7 +75,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async getUserSession(userId: string): Promise<object | null> {
     const data = await this.get(`session:${userId}`);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+    try {
+      return JSON.parse(data);
+    } catch {
+      return null;
+    }
   }
 
   async clearUserSession(userId: string): Promise<void> {

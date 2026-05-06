@@ -31,6 +31,7 @@ export function Modal({
       <div 
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
+        data-testid="modal-overlay"
       />
       
       {/* Modal */}

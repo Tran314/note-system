@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTagDto {
@@ -11,6 +11,6 @@ export class CreateTagDto {
   @ApiPropertyOptional({ example: '#FF0000', description: '标签颜色（HEX 格式）' })
   @IsOptional()
   @IsString()
-  @MaxLength(7, { message: '颜色格式不正确' })
+  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: '颜色必须是有效的 HEX 格式（如 #FF0000）' })
   color?: string;
 }

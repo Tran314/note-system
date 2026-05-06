@@ -1,10 +1,11 @@
-import { IsOptional, IsString, IsBoolean, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, Min, Max, IsIn } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateSettingsDto {
   @ApiPropertyOptional({ description: '主题', enum: ['light', 'dark'] })
   @IsOptional()
   @IsString()
+  @IsIn(['light', 'dark'], { message: '主题只能是 light 或 dark' })
   theme?: string;
 
   @ApiPropertyOptional({ description: '编辑器字体大小' })

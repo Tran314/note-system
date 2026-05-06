@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
@@ -29,6 +29,14 @@ export class UserService {
 
   // 更新用户资料
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('用户不存在');
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: updateProfileDto,
@@ -78,9 +86,10 @@ export class UserService {
 
   // 更新用户设置
   async updateSettings(userId: string, settings: UpdateSettingsDto) {
-    const userSettings = await this.prisma.userSettings.update({
+    const userSettings = await this.prisma.userSettings.upsert({
       where: { userId },
-      data: settings,
+      update: settings,
+      create: { userId, ...settings },
     });
 
     return userSettings;

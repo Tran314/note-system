@@ -101,7 +101,7 @@ export class FolderService {
     }
 
     const children = await this.prisma.folder.findMany({
-      where: { parentId: folderId },
+      where: { parentId: folderId, userId },
     });
 
     for (const child of children) {

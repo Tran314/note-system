@@ -1,4 +1,4 @@
-import { IsOptional, IsUUID, IsString, IsBoolean, IsInt, Min } from 'class-validator';
+import { IsOptional, IsUUID, IsString, IsBoolean, IsInt, Min, Max } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -35,6 +35,7 @@ export class QueryNotesDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(100)
   @Type(() => Number)
   limit?: number;
 }

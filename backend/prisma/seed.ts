@@ -30,7 +30,6 @@ async function main() {
       userId: user.id,
       theme: 'light',
       editorFontSize: 16,
-      editorLineHeight: 1.6,
     },
   });
 

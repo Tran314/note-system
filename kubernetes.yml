@@ -117,7 +117,7 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
-          command: ["redis-server", "--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
+          args: ["--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
           env:
             - name: REDIS_PASSWORD
               valueFrom:
@@ -167,7 +167,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ${DOCKER_REGISTRY:-your-docker-username}/note-system-backend:${IMAGE_TAG:-latest}
+          image: note-system-backend:latest
           envFrom:
             - configMapRef:
                 name: note-config
@@ -221,7 +221,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ${DOCKER_REGISTRY:-your-docker-username}/note-system-frontend:${IMAGE_TAG:-latest}
+          image: note-system-frontend:latest
           ports:
             - containerPort: 80
 

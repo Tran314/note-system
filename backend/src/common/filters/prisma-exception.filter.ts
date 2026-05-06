@@ -56,7 +56,6 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       path: request.url,
       method: request.method,
       message,
-      code: exception.code,
     };
 
     response.status(status).json(errorResponse);

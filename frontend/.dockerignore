@@ -17,5 +17,4 @@ tsconfig.json
 .prettierrc
 .eslintrc.js
 deploy.sh
-nginx.conf
 package.test.json
