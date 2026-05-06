@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,22 +9,26 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { api } from '../services/api';
 
-const profileSchema = z.object({
-  nickname: z.string().min(1, '昵称不能为空').max(50, '昵称最多50位'),
-  avatarUrl: z.string().url('请输入有效的 URL').optional().or(z.literal('')),
-});
+function createProfileSchema(t: (key: string) => string) {
+  return z.object({
+    nickname: z.string().min(1, t('auth.nicknameRequired')).max(50, t('auth.nicknameMax')),
+    avatarUrl: z.string().url(t('auth.invalidUrl')).optional().or(z.literal('')),
+  });
+}
 
-const passwordSchema = z.object({
-  oldPassword: z.string().min(6, '密码至少6位'),
-  newPassword: z.string().min(6, '密码至少6位'),
-  confirmPassword: z.string().min(6, '密码至少6位'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: '两次密码不一致',
-  path: ['confirmPassword'],
-});
+function createPasswordSchema(t: (key: string) => string) {
+  return z.object({
+    oldPassword: z.string().min(6, t('auth.passwordTooShort')),
+    newPassword: z.string().min(6, t('auth.passwordTooShort')),
+    confirmPassword: z.string().min(6, t('auth.passwordTooShort')),
+  }).refine((data) => data.newPassword === data.confirmPassword, {
+    message: t('auth.passwordMismatch'),
+    path: ['confirmPassword'],
+  });
+}
 
-type ProfileForm = z.infer<typeof profileSchema>;
-type PasswordForm = z.infer<typeof passwordSchema>;
+type ProfileForm = z.infer<ReturnType<typeof createProfileSchema>>;
+type PasswordForm = z.infer<ReturnType<typeof createPasswordSchema>>;
 
 function Settings() {
   const { t } = useTranslation();
@@ -32,6 +36,11 @@ function Settings() {
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'appearance'>('profile');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [fontSize, setFontSize] = useState(16);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+
+  const profileSchema = createProfileSchema(t);
+  const passwordSchema = createPasswordSchema(t);
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -61,8 +70,9 @@ function Settings() {
       const response = await api.put('/users/profile', data);
       setUser(response.data.data);
       setMessage({ type: 'success', text: t('settings.profileSection') });
-    } catch (error) {
-      setMessage({ type: 'error', text: t('errors.networkError') });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      setMessage({ type: 'error', text: err.response?.data?.message || t('errors.networkError') });
     } finally {
       setSaving(false);
     }
@@ -78,14 +88,23 @@ function Settings() {
       });
       setMessage({ type: 'success', text: t('settings.passwordChanged') });
       passwordForm.reset();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.response?.data?.message || t('settings.passwordWrong') });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      setMessage({ type: 'error', text: err.response?.data?.message || t('settings.passwordWrong') });
     } finally {
       setSaving(false);
     }
   };
 
-  const tabs = [
+  const toggleDarkMode = useCallback((dark: boolean) => {
+    if (dark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const tabs: { id: 'profile' | 'password' | 'appearance'; label: string; icon: typeof User }[] = [
     { id: 'profile', label: t('settings.profile'), icon: User },
     { id: 'password', label: t('settings.changePassword'), icon: Lock },
     { id: 'appearance', label: t('settings.appearance'), icon: Palette },
@@ -100,7 +119,7 @@ function Settings() {
           <button
             key={tab.id}
             onClick={() => {
-              setActiveTab(tab.id as any);
+              setActiveTab(tab.id);
               setMessage(null);
             }}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
@@ -140,7 +159,7 @@ function Settings() {
               {...profileForm.register('avatarUrl')}
               placeholder="https://example.com/avatar.jpg"
               error={profileForm.formState.errors.avatarUrl?.message}
-              helperText="支持 jpg/png 格式的图片链接"
+              helperText={t('settings.avatarHelperText')}
             />
 
             <div className="flex items-center gap-4">
@@ -195,15 +214,17 @@ function Settings() {
               <label className="block text-sm font-medium mb-2">{t('settings.theme')}</label>
               <div className="flex gap-3">
                 <button
-                  onClick={() => document.documentElement.classList.remove('dark')}
+                  onClick={() => toggleDarkMode(false)}
                   className="flex-1 p-4 border-2 rounded-lg hover:border-blue-500 transition-colors"
+                  aria-pressed="false"
                 >
                   <div className="w-full h-20 bg-white border rounded mb-2" />
                   <span className="text-sm">{t('settings.themeLight')}</span>
                 </button>
                 <button
-                  onClick={() => document.documentElement.classList.add('dark')}
+                  onClick={() => toggleDarkMode(true)}
                   className="flex-1 p-4 border-2 rounded-lg hover:border-blue-500 transition-colors"
+                  aria-pressed="true"
                 >
                   <div className="w-full h-20 bg-gray-800 border rounded mb-2" />
                   <span className="text-sm">{t('settings.themeDark')}</span>
@@ -212,10 +233,14 @@ function Settings() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{t('settings.editorSettings')}</label>
-              <select className="input-field">
+              <label className="block text-sm font-medium mb-2">{t('settings.fontSize')}</label>
+              <select 
+                className="input-field"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+              >
                 <option value="14">14px</option>
-                <option value="16" selected>16px</option>
+                <option value="16">16px</option>
                 <option value="18">18px</option>
                 <option value="20">20px</option>
               </select>
@@ -227,9 +252,18 @@ function Settings() {
                 <p className="text-sm text-gray-500">{t('settings.autoSaveEnabled')}</p>
               </div>
               <button
-                className="w-12 h-6 bg-blue-600 rounded-full relative"
+                onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                className={`w-12 h-6 rounded-full relative transition-colors ${
+                  autoSaveEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+                role="switch"
+                aria-checked={autoSaveEnabled}
               >
-                <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
+                <span
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    autoSaveEnabled ? 'right-1' : 'left-1'
+                  }`}
+                />
               </button>
             </div>
           </div>

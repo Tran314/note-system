@@ -3,6 +3,17 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
 
+interface FolderTreeNode {
+  id: string;
+  userId: string;
+  name: string;
+  parentId: string | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+  children: FolderTreeNode[];
+}
+
 @Injectable()
 export class FolderService {
   constructor(private prisma: PrismaService) {}
@@ -31,7 +42,6 @@ export class FolderService {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
 
-    // 构建树形结构
     return this.buildFolderTree(folders);
   }
 
@@ -68,7 +78,6 @@ export class FolderService {
 
   // 删除文件夹（连带删除子文件夹和笔记）
   async remove(userId: string, folderId: string) {
-    // 检查文件夹是否存在
     const folder = await this.prisma.folder.findFirst({
       where: { id: folderId, userId },
     });
@@ -77,16 +86,13 @@ export class FolderService {
       throw new NotFoundException('文件夹不存在');
     }
 
-    // 递归删除子文件夹（限制深度为 10）
     await this.removeChildFolders(userId, folderId, 1);
 
-    // 软删除文件夹内的笔记
     await this.prisma.note.updateMany({
       where: { folderId, userId },
       data: { isDeleted: true, deletedAt: new Date() },
     });
 
-    // 删除文件夹
     await this.prisma.folder.delete({
       where: { id: folderId },
     });
@@ -119,18 +125,24 @@ export class FolderService {
   }
 
   // 构建树形结构
-  private buildFolderTree(folders: any[]) {
-    const folderMap = new Map();
-    const rootFolders: any[] = [];
+  private buildFolderTree(folders: {
+    id: string;
+    userId: string;
+    name: string;
+    parentId: string | null;
+    sortOrder: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }[]): FolderTreeNode[] {
+    const folderMap = new Map<string, FolderTreeNode>();
+    const rootFolders: FolderTreeNode[] = [];
 
-    // 创建映射
     folders.forEach((folder) => {
       folderMap.set(folder.id, { ...folder, children: [] });
     });
 
-    // 构建树形结构
     folders.forEach((folder) => {
-      const node = folderMap.get(folder.id);
+      const node = folderMap.get(folder.id)!;
       if (folder.parentId) {
         const parent = folderMap.get(folder.parentId);
         if (parent) {

@@ -8,10 +8,11 @@ import { FileText, Pin, Trash2, Clock, Folder, Tag, Plus, Search, Grid, List } f
 import { timeAgo, truncate, debounce } from '../utils/format';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
+import { Modal } from '../components/common/Modal';
 import { Note } from '../types/note.types';
 
 function NoteList() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { notes, loading, fetchNotes, deleteNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
@@ -21,6 +22,7 @@ function NoteList() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNotes({ keyword, folderId: selectedFolder || undefined, tagId: selectedTag || undefined });
@@ -39,9 +41,10 @@ function NoteList() {
     debouncedSearch(e.target.value);
   };
 
-  const handleDelete = async (noteId: string) => {
-    if (confirm(t('notes.deleteConfirm'))) {
-      await deleteNote(noteId);
+  const handleDeleteConfirm = async () => {
+    if (deleteTarget) {
+      await deleteNote(deleteTarget);
+      setDeleteTarget(null);
     }
   };
 
@@ -65,10 +68,11 @@ function NoteList() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleDelete(note.id);
+              setDeleteTarget(note.id);
             }}
             className="p-1 hover:bg-red-50 rounded text-red-500"
             title={t('common.delete')}
+            aria-label={t('common.delete')}
           >
             <Trash2 size={14} />
           </button>
@@ -76,13 +80,13 @@ function NoteList() {
       </div>
 
       <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-        {truncate(note.content?.replace(/<[^>]*>/g, '') || '无内容', 100)}
+        {truncate(note.content?.replace(/<[^>]*>/g, '') || '', 100)}
       </p>
 
       <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
         <span className="flex items-center gap-1">
           <Clock size={12} />
-          {timeAgo(note.updatedAt)}
+          {timeAgo(note.updatedAt, i18n.language)}
         </span>
         
         {note.folder && (
@@ -140,6 +144,7 @@ function NoteList() {
               onClick={() => setViewMode('list')}
               className={`p-2 ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-500'}`}
               title={t('notes.viewList')}
+              aria-label={t('notes.viewList')}
             >
               <List size={18} />
             </button>
@@ -147,6 +152,7 @@ function NoteList() {
               onClick={() => setViewMode('grid')}
               className={`p-2 ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-500'}`}
               title={t('notes.viewGrid')}
+              aria-label={t('notes.viewGrid')}
             >
               <Grid size={18} />
             </button>
@@ -169,7 +175,7 @@ function NoteList() {
             )}
             {selectedTag && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                {tags.find(t => t.id === selectedTag)?.name}
+                {tags.find(tag => tag.id === selectedTag)?.name}
                 <button onClick={() => setSelectedTag(null)} className="hover:text-gray-900">×</button>
               </span>
             )}
@@ -195,6 +201,20 @@ function NoteList() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title={t('common.delete')}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</Button>
+            <Button onClick={handleDeleteConfirm}>{t('common.delete')}</Button>
+          </>
+        }
+      >
+        <p>{t('notes.deleteConfirm')}</p>
+      </Modal>
     </div>
   );
 }

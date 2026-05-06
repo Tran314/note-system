@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
@@ -12,7 +13,6 @@ export class NoteService {
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { title, content, folderId, tags } = createNoteDto;
 
-    // 创建笔记
     const note = await this.prisma.note.create({
       data: {
         userId,
@@ -33,7 +33,6 @@ export class NoteService {
       },
     });
 
-    // 创建初始版本
     await this.prisma.noteVersion.create({
       data: {
         noteId: note.id,
@@ -50,7 +49,7 @@ export class NoteService {
   async findAll(userId: string, query: QueryNotesDto) {
     const { folderId, tagId, keyword, isPinned, page = 1, limit = 20 } = query;
 
-    const where: any = {
+    const where: Prisma.NoteWhereInput = {
       userId,
       isDeleted: false,
     };
@@ -121,54 +120,59 @@ export class NoteService {
     return note;
   }
 
-  // 更新笔记
+  // 更新笔记（原子操作，使用事务防止竞态条件）
   async update(userId: string, noteId: string, updateNoteDto: UpdateNoteDto) {
     const { title, content, folderId, isPinned, tags } = updateNoteDto;
 
-    // 获取当前笔记
-    const currentNote = await this.prisma.note.findFirst({
-      where: { id: noteId, userId, isDeleted: false },
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 获取当前笔记
+      const currentNote = await tx.note.findFirst({
+        where: { id: noteId, userId, isDeleted: false },
+      });
+
+      if (!currentNote) {
+        throw new NotFoundException('笔记不存在');
+      }
+
+      const newVersion = currentNote.version + 1;
+
+      // 更新笔记并创建新版本（在同一事务中）
+      const note = await tx.note.update({
+        where: { id: noteId },
+        data: {
+          title,
+          content,
+          folderId,
+          isPinned,
+          version: newVersion,
+          tags: tags
+            ? {
+                deleteMany: {},
+                create: tags.map((tagId) => ({
+                  tag: { connect: { id: tagId } },
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          folder: true,
+          tags: { include: { tag: true } },
+        },
+      });
+
+      await tx.noteVersion.create({
+        data: {
+          noteId: note.id,
+          version: newVersion,
+          title: title || currentNote.title,
+          content: content || currentNote.content,
+        },
+      });
+
+      return note;
     });
 
-    if (!currentNote) {
-      throw new NotFoundException('笔记不存在');
-    }
-
-    // 更新笔记
-    const note = await this.prisma.note.update({
-      where: { id: noteId },
-      data: {
-        title,
-        content,
-        folderId,
-        isPinned,
-        version: currentNote.version + 1,
-        tags: tags
-          ? {
-              deleteMany: {},
-              create: tags.map((tagId) => ({
-                tag: { connect: { id: tagId } },
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        folder: true,
-        tags: { include: { tag: true } },
-      },
-    });
-
-    // 创建新版本
-    await this.prisma.noteVersion.create({
-      data: {
-        noteId: note.id,
-        version: note.version,
-        title: title || currentNote.title,
-        content: content || currentNote.content,
-      },
-    });
-
-    return note;
+    return result;
   }
 
   // 软删除笔记
@@ -215,7 +219,6 @@ export class NoteService {
 
   // 获取历史版本
   async getVersions(userId: string, noteId: string) {
-    // 验证笔记属于当前用户
     const note = await this.prisma.note.findFirst({
       where: { id: noteId, userId },
     });

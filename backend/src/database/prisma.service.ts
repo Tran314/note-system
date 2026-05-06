@@ -7,13 +7,17 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
+    const nodeEnv = process.env.NODE_ENV || 'development';
     super({
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'stdout', level: 'info' },
-        { emit: 'stdout', level: 'warn' },
-        { emit: 'stdout', level: 'error' },
-      ],
+      log:
+        nodeEnv === 'production'
+          ? [{ emit: 'stdout', level: 'error' }]
+          : [
+              { emit: 'event', level: 'query' },
+              { emit: 'stdout', level: 'info' },
+              { emit: 'stdout', level: 'warn' },
+              { emit: 'stdout', level: 'error' },
+            ],
     });
   }
 

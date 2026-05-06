@@ -59,6 +59,12 @@ jobs:
         working-directory: backend
         run: npx prisma generate
       
+      - name: Run database migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb?schema=public
+        run: npx prisma migrate deploy
+      
       - name: Run tests
         working-directory: backend
         env:

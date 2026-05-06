@@ -50,7 +50,10 @@
     "invalidEmail": "邮箱格式不正确",
     "passwordTooShort": "密码至少6位",
     "passwordMismatch": "两次密码不一致",
-    "emailExists": "该邮箱已被注册"
+    "emailExists": "该邮箱已被注册",
+    "nicknameRequired": "昵称不能为空",
+    "nicknameMax": "昵称最多50位",
+    "invalidUrl": "请输入有效的 URL"
   },
   "notes": {
     "allNotes": "所有笔记",
@@ -147,7 +150,8 @@
     "lineHeight": "行高",
     "autoSave": "自动保存",
     "autoSaveEnabled": "启用自动保存",
-    "autoSaveDelay": "自动保存延迟(秒)"
+    "autoSaveDelay": "自动保存延迟(秒)",
+    "avatarHelperText": "支持 jpg/png 格式的图片链接"
   },
   "export": {
     "export": "导出",

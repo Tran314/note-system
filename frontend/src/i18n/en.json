@@ -50,7 +50,10 @@
     "invalidEmail": "Invalid email format",
     "passwordTooShort": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",
-    "emailExists": "Email already registered"
+    "emailExists": "Email already registered",
+    "nicknameRequired": "Nickname is required",
+    "nicknameMax": "Nickname must be at most 50 characters",
+    "invalidUrl": "Please enter a valid URL"
   },
   "notes": {
     "allNotes": "All Notes",
@@ -147,7 +150,8 @@
     "lineHeight": "Line Height",
     "autoSave": "Auto Save",
     "autoSaveEnabled": "Enable auto save",
-    "autoSaveDelay": "Auto save delay (seconds)"
+    "autoSaveDelay": "Auto save delay (seconds)",
+    "avatarHelperText": "Supports jpg/png image links"
   },
   "export": {
     "export": "Export",

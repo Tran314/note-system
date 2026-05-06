@@ -34,17 +34,21 @@ git fetch origin
 git checkout main
 git pull origin main
 
+# Run database migrations
+echo "📊 Running database migrations..."
+docker compose run --rm backend npx prisma migrate deploy
+
 # Pull latest Docker images
 echo "🐳 Pulling Docker images..."
-docker-compose pull
+docker compose pull
 
 # Stop existing containers
 echo "🛑 Stopping existing containers..."
-docker-compose down --remove-orphans
+docker compose down --remove-orphans
 
 # Start new containers
 echo "🟢 Starting new containers..."
-docker-compose up -d
+docker compose up -d
 
 # Wait for health check with retry
 echo "⏳ Waiting for services to be healthy..."
@@ -64,7 +68,7 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Backend health check failed"
-    docker-compose logs backend
+    docker compose logs backend
     exit 1
 fi
 
@@ -82,11 +86,11 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Frontend health check failed"
-    docker-compose logs frontend
+    docker compose logs frontend
     exit 1
 fi
 
-# Cleanup old backups (keep last 7)
+# Cleanup old backups (older than 7 days)
 echo "🧹 Cleaning up old backups..."
 find "$BACKUP_DIR" -name "backup-*.tar.gz" -mtime +7 -delete
 
@@ -103,6 +107,6 @@ echo "   PostgreSQL: localhost:5432"
 echo "   Redis: localhost:6379"
 echo ""
 echo "📋 Useful commands:"
-echo "   View logs: docker-compose logs -f"
-echo "   Restart: docker-compose restart"
-echo "   Stop: docker-compose down"
+echo "   View logs: docker compose logs -f"
+echo "   Restart: docker compose restart"
+echo "   Stop: docker compose down"

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useNoteStore } from '../store/note.store';
@@ -39,8 +39,11 @@ function NoteEditor() {
   const [linkUrl, setLinkUrl] = useState('');
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   const isNewNote = id === 'new';
+  const autoSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
+  const noteIdRef = useRef(id);
 
   const editor = useEditor({
     extensions: [
@@ -70,40 +73,48 @@ function NoteEditor() {
     content: '',
     onUpdate: () => {
       setHasUnsavedChanges(true);
-      triggerAutoSave();
+      autoSaveRef.current?.();
     },
   });
 
+  // 初始化自动保存
+  useEffect(() => {
+    autoSaveRef.current = debounce(() => {
+      if (title.trim() || editor?.getText().trim()) {
+        handleSave(true);
+      }
+    }, 2000);
+  }, []);
+
+  // 加载笔记数据
   useEffect(() => {
     if (!isNewNote && id) {
       fetchNote(id);
     }
   }, [id, isNewNote]);
 
+  // 同步编辑器内容（仅在笔记 ID 变化时同步，防止覆盖用户编辑）
   useEffect(() => {
-    if (currentNote && editor) {
+    if (currentNote && editor && noteIdRef.current !== id) {
+      noteIdRef.current = id;
       setTitle(currentNote.title);
       editor.commands.setContent(currentNote.content || '');
       setLastSaved(new Date(currentNote.updatedAt));
+      setHasUnsavedChanges(false);
+      setSaveError(null);
     }
-  }, [currentNote, editor]);
-
-  const triggerAutoSave = useCallback(
-    debounce(() => {
-      if (title.trim() || editor?.getText().trim()) {
-        handleSave(true);
-      }
-    }, 2000),
-    [title, editor, id]
-  );
+  }, [currentNote, editor, id]);
 
   const handleSave = async (isAutoSave = false) => {
     if (!title.trim() && !editor?.getText().trim()) {
-      if (!isAutoSave) alert(t('notes.titlePlaceholder'));
+      if (!isAutoSave) setSaveError(t('common.titlePlaceholder'));
       return;
     }
 
-    if (!isAutoSave) setSaving(true);
+    if (!isAutoSave) {
+      setSaving(true);
+      setSaveError(null);
+    }
 
     const content = editor?.getHTML() || '';
 
@@ -112,14 +123,16 @@ function NoteEditor() {
         const newNote = await createNote({ title, content });
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
+        setSaveError(null);
         navigate(`/notes/${newNote.id}`, { replace: true });
       } else {
         await updateNote(id!, { title, content });
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
+        setSaveError(null);
       }
-    } catch (error) {
-      if (!isAutoSave) alert(t('notes.saveFailed'));
+    } catch {
+      if (!isAutoSave) setSaveError(t('notes.saveFailed'));
     } finally {
       if (!isAutoSave) setSaving(false);
     }
@@ -235,6 +248,7 @@ function NoteEditor() {
             onClick={() => navigate(-1)}
             className="p-2 hover:bg-gray-100 rounded"
             title={t('common.back')}
+            aria-label={t('common.back')}
           >
             <ArrowLeft size={20} />
           </button>
@@ -263,6 +277,13 @@ function NoteEditor() {
         </div>
       </div>
 
+      {saveError && (
+        <div className="p-2 bg-red-50 text-red-600 text-sm text-center">
+          {saveError}
+          <button onClick={() => setSaveError(null)} className="ml-2 underline">{t('common.cancel')}</button>
+        </div>
+      )}
+
       <div className="p-4 border-b border-gray-200">
         <input
           type="text"
@@ -270,7 +291,7 @@ function NoteEditor() {
           onChange={(e) => {
             setTitle(e.target.value);
             setHasUnsavedChanges(true);
-            triggerAutoSave();
+            autoSaveRef.current?.();
           }}
           placeholder={t('common.titlePlaceholder')}
           className="w-full text-2xl font-bold outline-none"
@@ -278,14 +299,15 @@ function NoteEditor() {
       </div>
 
       <div className="flex items-center gap-1 p-2 border-b border-gray-200 flex-wrap sticky top-[60px] bg-white z-10">
-        {toolbarItems.map(({ icon: Icon, action, title, active }, index) => (
+        {toolbarItems.map(({ icon: Icon, action, title: tooltip, active }, index) => (
           <button
             key={index}
             onClick={action}
             className={`p-2 rounded transition-colors ${
               active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
             }`}
-            title={title}
+            title={tooltip}
+            aria-label={tooltip}
           >
             <Icon size={16} />
           </button>

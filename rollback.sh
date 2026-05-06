@@ -34,7 +34,7 @@ echo "🔄 Rolling back to $BACKUP_NAME..."
 # Stop containers
 echo "🛑 Stopping containers..."
 cd "$PROJECT_DIR"
-docker-compose down || true
+docker compose down || true
 
 # Create a safety backup of current state before restoring
 SAFETY_BACKUP="pre-rollback-$(date +%Y%m%d-%H%M%S).tar.gz"
@@ -66,7 +66,7 @@ rm -rf "$TEMP_DIR"
 # Start containers
 echo "🟢 Starting containers..."
 cd "$PROJECT_DIR"
-docker-compose up -d
+docker compose up -d
 
 # Health check with retry
 echo "⏳ Waiting for services..."

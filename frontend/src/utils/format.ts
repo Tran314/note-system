@@ -1,26 +1,24 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-// 合并 Tailwind 类名
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// 格式化日期
-export function formatDate(date: string | Date, format: 'short' | 'long' = 'short'): string {
+export function formatDate(date: string | Date, format: 'short' | 'long' = 'short', locale = 'zh-CN'): string {
   const d = new Date(date);
   
   if (isNaN(d.getTime())) return '-';
   
   if (format === 'short') {
-    return d.toLocaleDateString('zh-CN', {
+    return d.toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
     });
   }
   
-  return d.toLocaleDateString('zh-CN', {
+  return d.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -29,8 +27,7 @@ export function formatDate(date: string | Date, format: 'short' | 'long' = 'shor
   });
 }
 
-// 相对时间
-export function timeAgo(date: string | Date): string {
+export function timeAgo(date: string | Date, locale = 'zh-CN'): string {
   const d = new Date(date);
   if (isNaN(d.getTime())) return '-';
   
@@ -44,6 +41,16 @@ export function timeAgo(date: string | Date): string {
   const weeks = Math.floor(days / 7);
   const months = Math.floor(days / 30);
   
+  if (locale === 'en') {
+    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+    if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    if (seconds > 0) return `${seconds} second${seconds > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  }
+  
   if (months > 0) return `${months} 个月前`;
   if (weeks > 0) return `${weeks} 周前`;
   if (days > 0) return `${days} 天前`;
@@ -53,19 +60,17 @@ export function timeAgo(date: string | Date): string {
   return '刚刚';
 }
 
-// 截断文本
 export function truncate(text: string, length: number): string {
   if (!text) return '';
   if (text.length <= length) return text;
   return text.slice(0, length) + '...';
 }
 
-// 防抖
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout);
@@ -73,8 +78,7 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-// 节流
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -89,7 +93,6 @@ export function throttle<T extends (...args: any[]) => any>(
   };
 }
 
-// 文件大小格式化
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
   
@@ -100,7 +103,6 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// 生成随机颜色
 export function randomColor(): string {
   const colors = [
     '#EF4444', '#F97316', '#F59E0B', '#84CC16',
@@ -110,7 +112,6 @@ export function randomColor(): string {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// 复制到剪贴板
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -120,7 +121,6 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// 下载文件
 export function downloadFile(url: string, filename?: string): void {
   const link = document.createElement('a');
   link.href = url;
@@ -130,12 +130,10 @@ export function downloadFile(url: string, filename?: string): void {
   document.body.removeChild(link);
 }
 
-// 判断是否是图片 URL
 export function isImageUrl(url: string): boolean {
   return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
 }
 
-// 生成唯一 ID
 export function generateId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
