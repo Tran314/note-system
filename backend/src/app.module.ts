@@ -20,6 +20,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { validationSchema } from './config/env.validation';
 
 @Module({
   imports: [
@@ -27,6 +28,10 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../.env'],
+      validationSchema,
+      validationOptions: {
+        abortEarly: false,
+      },
     }),
 
     // JWT 模块
@@ -41,13 +46,17 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
       inject: [ConfigService],
     }),
 
-    // 限流模块
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 分钟
-        limit: 100, // 每分钟 100 次请求
-      },
-    ]),
+    // 限流模块 - 通过环境变量配置
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get<number>('THROTTLE_TTL', 60000), // 默认 1 分钟
+          limit: configService.get<number>('THROTTLE_LIMIT', 100), // 默认每分钟 100 次请求
+        },
+      ],
+      inject: [ConfigService],
+    }),
 
     // 数据库模块
     PrismaModule,
