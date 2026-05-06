@@ -38,26 +38,111 @@ const ALLOWED_EXTENSIONS = [
 
 @Injectable()
 export class AttachmentService {
+  private readonly allowedExtensions = new Set([
+    // 图片
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.ico',
+    // 文档
+    '.pdf',
+    // 文本
+    '.txt', '.csv', '.md', '.log',
+    // Office
+    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    // 压缩文件
+    '.zip', '.rar', '.7z', '.tar', '.gz',
+  ]);
+
+  private readonly allowedMimeTypes = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
+    'application/pdf',
+    'text/plain', 'text/csv', 'text/markdown',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed',
+    'application/gzip', 'application/x-tar',
+  ]);
+
+  private readonly fileSignatureChecks: Map<string, (buffer: Buffer) => boolean> = new Map([
+    ['image/jpeg', (buffer) => buffer[0] === 0xFF && buffer[1] === 0xD8],
+    ['image/png', (buffer) => 
+      buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47],
+    ['image/gif', (buffer) => 
+      (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38)],
+    ['application/pdf', (buffer) => 
+      buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46],
+  ]);
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {}
 
-  async upload(userId: string, file: Express.Multer.File, noteId?: string) {
+  private async ensureUploadDir(dir: string): Promise<void> {
+    try {
+      await fs.access(dir);
+    } catch {
+      await fs.mkdir(dir, { recursive: true });
+    }
+  }
+
+  private async validateFile(file: Express.Multer.File, userId: string): Promise<void> {
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (!this.allowedExtensions.has(ext)) {
+      throw new BadRequestException(`不支持的文件类型: ${ext}`);
+    }
+
+    if (!this.allowedMimeTypes.has(file.mimetype)) {
+      throw new BadRequestException('不支持的文件 MIME 类型');
+    }
+
+    const maxSize = this.configService.get<number>('MAX_FILE_SIZE', 10485760);
+    if (file.size > maxSize) {
+      throw new BadRequestException(`文件大小超过限制（${Math.floor(maxSize / 1048576)}MB）`);
+    }
+
+    if (file.size === 0) {
+      throw new BadRequestException('文件大小为0，请上传有效文件');
+    }
+
+    const filename = file.originalname.toLowerCase();
+    if (/[<>"|?*\\]/.test(filename)) {
+      throw new BadRequestException('文件名包含非法字符');
+    }
+
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      throw new BadRequestException('文件名包含路径遍历字符');
+    }
+
+    const signatureChecker = this.fileSignatureChecks.get(file.mimetype);
+    if (signatureChecker && file.buffer && !signatureChecker(file.buffer)) {
+      throw new BadRequestException('文件内容与声明类型不符，可能存在安全风险');
+    }
+
+    const maxFilesPerUser = this.configService.get<number>('MAX_FILES_PER_USER', 1000);
+    const currentFileCount = await this.prisma.attachment.count({ where: { userId } });
+    if (currentFileCount >= maxFilesPerUser) {
+      throw new BadRequestException(`已达到文件数量上限（${maxFilesPerUser}个）`);
+    }
+  }
+
+  async upload(
+    userId: string,
+    file: Express.Multer.File,
+    noteId?: string,
+  ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
 
-    await this.ensureNoteAccess(userId, noteId);
-
-    const maxSize = this.configService.get<number>('MAX_FILE_SIZE', 10485760);
-    if (file.size > maxSize) {
-      throw new BadRequestException('File exceeds max size');
+    if (!file.buffer) {
+      throw new BadRequestException('文件内容缺失');
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException(`Unsupported mime type: ${file.mimetype}`);
-    }
+    await this.validateFile(file, userId);
 
     const originalExt = path.extname(file.originalname).toLowerCase();
     const safeExt = originalExt.replace(/[^a-z0-9.]/g, '');
@@ -88,10 +173,28 @@ export class AttachmentService {
 
     const uniqueFilename = `${uuidv4()}${safeExt}`;
     const uploadDir = this.configService.get<string>('UPLOAD_DIR', './uploads');
-    const filePath = path.join(uploadDir, uniqueFilename);
+    const userDir = path.join(uploadDir, userId);
+    const filePath = path.join(userDir, uniqueFilename);
 
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    await this.ensureUploadDir(userDir);
+
+    try {
+      await fs.writeFile(filePath, file.buffer);
+
+      const attachment = await this.prisma.attachment.create({
+        data: {
+          userId,
+          noteId,
+          filename: file.originalname,
+          filePath: path.join(userId, uniqueFilename),
+          fileSize: file.size,
+          mimeType: file.mimetype,
+        },
+      });
+      return attachment;
+    } catch (error) {
+      await fs.unlink(filePath).catch(() => {});
+      throw error;
     }
 
     fs.writeFileSync(filePath, file.buffer);
@@ -119,7 +222,27 @@ export class AttachmentService {
       files.map((file) => this.upload(userId, file, noteId)),
     );
 
-    return attachments;
+    const uploadDir = this.configService.get<string>('UPLOAD_DIR', './uploads');
+
+    try {
+      for (const file of files) {
+        const attachment = await this.upload(userId, file, noteId);
+        uploadedPaths.push((attachment as any).filePath);
+        createdIds.push((attachment as any).id);
+        attachments.push(attachment);
+      }
+      return attachments;
+    } catch (error) {
+      for (const filePath of uploadedPaths) {
+        await fs.unlink(path.join(uploadDir, filePath)).catch(() => {});
+      }
+      if (createdIds.length > 0) {
+        await this.prisma.attachment.deleteMany({
+          where: { id: { in: createdIds } },
+        }).catch(() => {});
+      }
+      throw error;
+    }
   }
 
   async findAll(userId: string, noteId?: string) {
@@ -174,15 +297,13 @@ export class AttachmentService {
     const uploadDir = this.configService.get<string>('UPLOAD_DIR', './uploads');
     const filePath = path.join(uploadDir, attachment.filePath);
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
     await this.prisma.attachment.delete({
       where: { id: attachmentId },
     });
 
-    return { message: 'Attachment deleted' };
+    await fs.unlink(filePath).catch(() => {});
+
+    return { message: '文件已删除' };
   }
 
   async attachToNote(userId: string, attachmentId: string, noteId: string) {

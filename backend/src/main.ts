@@ -10,9 +10,39 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // 安全中间件
-  app.use(helmet());
-  app.use((cookieParser as any)());
+  // 优雅关闭
+  app.enableShutdownHooks();
+
+  // 安全中间件 - 配置增强的安全头
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          connectSrc: ["'self'", "https:"],
+          imgSrc: ["'self'", "data:", "https:"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          fontSrc: ["'self'", "https:"],
+          objectSrc: ["'none'"],
+          frameSrc: ["'none'"],
+          scriptSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: true,
+      crossOriginOpenerPolicy: true,
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      noSniff: true,
+      xssFilter: true,
+      frameguard: { action: 'deny' },
+    }),
+  );
+  app.use(cookieParser());
 
   // 全局验证管道
   app.useGlobalPipes(
