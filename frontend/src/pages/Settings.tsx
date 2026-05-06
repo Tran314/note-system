@@ -1,8 +1,13 @@
+<<<<<<< Updated upstream
 import { useState } from 'react';
+=======
+import { useState, useEffect } from 'react';
+>>>>>>> Stashed changes
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '../store/auth.store';
+import { useSettingsStore } from '../store/settings.store';
 import { User, Lock, Palette, Save } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
@@ -28,10 +33,14 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 
 function Settings() {
   const { user, setUser } = useAuthStore();
+  const { fontSize, autoSaveEnabled, setFontSize, setAutoSaveEnabled, isDarkMode, setDarkMode } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'appearance'>('profile');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+<<<<<<< Updated upstream
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+=======
+>>>>>>> Stashed changes
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -100,10 +109,17 @@ function Settings() {
     }
   };
 
+<<<<<<< Updated upstream
   const tabs = [
     { id: 'profile', label: '个人资料', icon: User },
     { id: 'password', label: '密码修改', icon: Lock },
     { id: 'appearance', label: '外观设置', icon: Palette },
+=======
+  const tabs: { id: 'profile' | 'password' | 'appearance'; label: string; icon: typeof User }[] = [
+    { id: 'profile', label: t('settings.profile'), icon: User },
+    { id: 'password', label: t('settings.changePassword'), icon: Lock },
+    { id: 'appearance', label: t('settings.appearance'), icon: Palette },
+>>>>>>> Stashed changes
   ];
 
   return (
@@ -205,11 +221,43 @@ function Settings() {
       )}
 
       {activeTab === 'appearance' && (
+<<<<<<< Updated upstream
         <div className="card space-y-6">
           <div>
             <h2 className="mb-1 text-lg font-medium text-stone-900">外观设置</h2>
             <p className="text-sm text-stone-500">让界面更适合你的日常使用习惯</p>
           </div>
+=======
+        <div className="card">
+          <h2 className="font-medium mb-4">{t('settings.appearance')}</h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2">{t('settings.theme')}</label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDarkMode(false)}
+                  className={`flex-1 p-4 border-2 rounded-lg transition-colors ${
+                    !isDarkMode ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-500'
+                  }`}
+                  aria-pressed={!isDarkMode}
+                >
+                  <div className="w-full h-20 bg-white border rounded mb-2" />
+                  <span className="text-sm">{t('settings.themeLight')}</span>
+                </button>
+                <button
+                  onClick={() => setDarkMode(true)}
+                  className={`flex-1 p-4 border-2 rounded-lg transition-colors ${
+                    isDarkMode ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-500'
+                  }`}
+                  aria-pressed={isDarkMode}
+                >
+                  <div className="w-full h-20 bg-gray-800 border rounded mb-2" />
+                  <span className="text-sm">{t('settings.themeDark')}</span>
+                </button>
+              </div>
+            </div>
+>>>>>>> Stashed changes
 
           <div>
             <label className="mb-2 block text-sm font-medium text-stone-700">主题</label>

@@ -110,11 +110,16 @@ export class AttachmentController {
     const file = await this.attachmentService.getFile(userId, attachmentId);
     const encodedFilename = encodeURIComponent(file.filename);
 
+    const filename = encodeURIComponent(file.filename.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, '_'));
     res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+<<<<<<< Updated upstream
     res.setHeader(
       'Content-Disposition',
       `attachment; filename*=UTF-8''${encodedFilename}`,
     );
+=======
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${filename}`);
+>>>>>>> Stashed changes
     res.send(file.buffer);
   }
 

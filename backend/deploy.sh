@@ -9,9 +9,15 @@ echo "🚀 开始部署笔记系统..."
 # 进入后端目录
 cd /root/.openclaw/workspace/projects/note-system/backend
 
+<<<<<<< Updated upstream
 # 安装依赖
 echo "📦 安装后端依赖..."
 npm install --production
+=======
+# 安装依赖（使用 npm ci 确保可重复性，包含 devDependencies 以支持 prisma CLI）
+echo "📦 安装后端依赖..."
+npm ci
+>>>>>>> Stashed changes
 
 # 生成 Prisma 客户端
 echo "🔧 生成 Prisma 客户端..."

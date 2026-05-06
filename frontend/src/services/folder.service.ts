@@ -1,20 +1,19 @@
 import { api } from './api';
+import { Folder, ApiResponse, PaginatedResponse } from '../types/api.types';
 
 export const folderService = {
-  // 获取文件夹列表
-  getFolders: () => api.get('/folders'),
+  getFolders: (): Promise<ApiResponse<PaginatedResponse<Folder>>> =>
+    api.get('/folders'),
 
-  // 获取文件夹详情
-  getFolder: (id: string) => api.get(`/folders/${id}`),
+  getFolder: (id: string): Promise<ApiResponse<Folder>> =>
+    api.get(`/folders/${id}`),
 
-  // 创建文件夹
-  createFolder: (data: { name: string; parentId?: string; sortOrder?: number }) =>
+  createFolder: (data: { name: string; parentId?: string; sortOrder?: number }): Promise<ApiResponse<Folder>> =>
     api.post('/folders', data),
 
-  // 更新文件夹
-  updateFolder: (id: string, data: { name?: string; parentId?: string; sortOrder?: number }) =>
+  updateFolder: (id: string, data: { name?: string; parentId?: string; sortOrder?: number }): Promise<ApiResponse<Folder>> =>
     api.put(`/folders/${id}`, data),
 
-  // 删除文件夹
-  deleteFolder: (id: string) => api.delete(`/folders/${id}`),
+  deleteFolder: (id: string): Promise<ApiResponse<{ message: string }>> =>
+    api.delete(`/folders/${id}`),
 };

@@ -9,6 +9,15 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+<<<<<<< Updated upstream
+=======
+import {
+  ConflictException,
+  UnauthorizedException,
+  TooManyRequestsException,
+} from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
+>>>>>>> Stashed changes
 
 @Injectable()
 export class AuthService {
@@ -59,6 +68,14 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
+<<<<<<< Updated upstream
+=======
+    const failures = await this.redisService.getLoginFailures(email);
+    if (failures >= 5) {
+      throw new TooManyRequestsException('登录失败次数过多，请在 15 分钟后再试');
+    }
+
+>>>>>>> Stashed changes
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -70,10 +87,17 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
+      await this.redisService.incrLoginFailures(email);
       throw new UnauthorizedException('邮箱或密码错误');
     }
 
+<<<<<<< Updated upstream
     const accessToken = this.generateAccessToken(user.id, user.email);
+=======
+    await this.redisService.resetLoginFailures(email);
+
+    const tokens = await this.generateTokens(user.id);
+>>>>>>> Stashed changes
 
     return {
       user: {

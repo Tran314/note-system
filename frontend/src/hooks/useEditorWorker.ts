@@ -1,26 +1,39 @@
 import { useRef, useCallback, useEffect } from 'react';
 
+type WorkerMessageType = 'parse' | 'serialize' | 'search' | 'count';
+
 interface WorkerMessage {
-  type: 'parse' | 'serialize' | 'search' | 'count';
-  data: any;
+  type: WorkerMessageType;
+  data: unknown;
 }
 
 interface WorkerResponse {
   type: string;
-  result: any;
+  result: unknown;
   error?: string;
 }
 
-/**
- * Web Worker Hook（渲染进程性能优化）
- * 用于后台处理大型文档操作
- */
+interface ParseResult {
+  headings: string[];
+  wordCount: number;
+  links: string[];
+}
+
+interface SearchResult {
+  matches: Array<{ start: number; end: number; context: string }>;
+  total: number;
+}
+
+interface SerializeResult {
+  html: string;
+  text: string;
+}
+
 export function useEditorWorker() {
   const workerRef = useRef<Worker | null>(null);
+  const callbackIdRef = useRef<number>(0);
 
-  // 初始化 Worker
   useEffect(() => {
-    // Worker 文件路径
     const workerPath = new URL('./editor.worker.ts', import.meta.url);
     workerRef.current = new Worker(workerPath, { type: 'module' });
 
@@ -31,47 +44,49 @@ export function useEditorWorker() {
     };
   }, []);
 
-  // 解析大型文档
-  const parseDocument = useCallback((html: string): Promise<any> => {
-    return sendMessage('parse', html);
+  const parseDocument = useCallback((html: string): Promise<ParseResult> => {
+    return sendMessage<ParseResult>('parse', html);
   }, []);
 
-  // 序列化文档
-  const serializeDocument = useCallback((content: any, format: string): Promise<string> => {
-    return sendMessage('serialize', { content, format });
+  const serializeDocument = useCallback((content: unknown, format: string): Promise<string> => {
+    return sendMessage<SerializeResult>('serialize', { content, format }).then(r => r.html);
   }, []);
 
-  // 文档内搜索
-  const searchDocument = useCallback((html: string, query: string): Promise<any> => {
-    return sendMessage('search', { html, query });
+  const searchDocument = useCallback((html: string, query: string): Promise<SearchResult> => {
+    return sendMessage<SearchResult>('search', { html, query });
   }, []);
 
-  // 统计字数
   const countCharacters = useCallback((text: string): Promise<number> => {
-    return sendMessage('count', text);
+    return sendMessage<number>('count', text);
   }, []);
 
-  // 发送消息到 Worker
-  const sendMessage = useCallback((type: WorkerMessage['type'], data: any): Promise<any> => {
+  const sendMessage = useCallback(<T,>(type: WorkerMessageType, data: unknown): Promise<T> => {
     return new Promise((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error('Worker not initialized'));
         return;
       }
 
+      const callbackId = ++callbackIdRef.current;
+      const timeoutId = setTimeout(() => {
+        workerRef.current?.removeEventListener('message', handleMessage);
+        reject(new Error(`Worker message timeout: ${type}`));
+      }, 10000);
+
       const handleMessage = (event: MessageEvent<WorkerResponse>) => {
-        if (event.data.type === type) {
+        if (event.data.type === `${type}:${callbackId}`) {
+          clearTimeout(timeoutId);
           workerRef.current?.removeEventListener('message', handleMessage);
           if (event.data.error) {
             reject(new Error(event.data.error));
           } else {
-            resolve(event.data.result);
+            resolve(event.data.result as T);
           }
         }
       };
 
       workerRef.current.addEventListener('message', handleMessage);
-      workerRef.current.postMessage({ type, data });
+      workerRef.current.postMessage({ type: `${type}:${callbackId}`, data });
     });
   }, []);
 

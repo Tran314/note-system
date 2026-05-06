@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 import { Injectable } from '@nestjs/common';
+=======
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+>>>>>>> Stashed changes
 import { PrismaService } from '../../database/prisma.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -10,6 +14,13 @@ export class FolderService {
   // 创建文件夹
   async create(userId: string, createFolderDto: CreateFolderDto) {
     const { name, parentId, sortOrder } = createFolderDto;
+
+    if (parentId) {
+      const isCircular = await this.detectCircularReference('', parentId, userId);
+      if (isCircular) {
+        throw new BadRequestException('不能将文件夹移动到其子文件夹中');
+      }
+    }
 
     const folder = await this.prisma.folder.create({
       data: {
@@ -57,6 +68,13 @@ export class FolderService {
   async update(userId: string, folderId: string, updateFolderDto: UpdateFolderDto) {
     const { name, parentId, sortOrder } = updateFolderDto;
 
+    if (parentId) {
+      const isCircular = await this.detectCircularReference(folderId, parentId, userId);
+      if (isCircular) {
+        throw new BadRequestException('不能将文件夹移动到其子文件夹中');
+      }
+    }
+
     const folder = await this.prisma.folder.update({
       where: { id: folderId, userId },
       data: { name, parentId, sortOrder },
@@ -100,6 +118,55 @@ export class FolderService {
     return { message: '文件夹已删除' };
   }
 
+<<<<<<< Updated upstream
+=======
+  // 递归删除子文件夹（带深度限制）
+  private async removeChildFolders(userId: string, folderId: string, depth: number) {
+    if (depth > 10) {
+      return;
+    }
+
+    const children = await this.prisma.folder.findMany({
+      where: { parentId: folderId, userId },
+    });
+
+    for (const child of children) {
+      await this.removeChildFolders(userId, child.id, depth + 1);
+    }
+
+    await this.prisma.note.updateMany({
+      where: { folderId, userId },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
+
+    await this.prisma.folder.delete({
+      where: { id: folderId, userId },
+    });
+  }
+
+  private async detectCircularReference(folderId: string, newParentId: string, userId: string): Promise<boolean> {
+    let currentParentId: string | null = newParentId;
+    const visited = new Set<string>();
+
+    while (currentParentId) {
+      if (currentParentId === folderId) {
+        return true;
+      }
+      if (visited.has(currentParentId)) {
+        return true;
+      }
+      visited.add(currentParentId);
+
+      const parent = await this.prisma.folder.findFirst({
+        where: { id: currentParentId, userId },
+        select: { parentId: true },
+      });
+      currentParentId = parent?.parentId ?? null;
+    }
+    return false;
+  }
+
+>>>>>>> Stashed changes
   // 构建树形结构
   private buildFolderTree(folders: any[]) {
     const folderMap = new Map();

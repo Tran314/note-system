@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Note } from '../types/note.types';
+import { Note } from '../types/api.types';
 import { noteService } from '../services/note.service';
 
 const NOTE_LIST_CACHE_KEY = 'note-list-cache';
@@ -22,6 +22,7 @@ interface NoteState {
   notes: Note[];
   currentNote: Note | null;
   loading: boolean;
+  error: string | null;
   total: number;
   page: number;
   fetchNotes: (params?: any) => Promise<void>;
@@ -32,6 +33,7 @@ interface NoteState {
   deleteNote: (id: string) => Promise<void>;
   restoreNote: (id: string) => Promise<void>;
   setPage: (page: number) => void;
+  clearError: () => void;
 }
 
 const noteDetailMemoryCache = new Map<string, NoteMemoryEntry>();
@@ -114,6 +116,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   notes: cachedList?.notes ?? [],
   currentNote: null,
   loading: false,
+<<<<<<< Updated upstream
   total: cachedList?.total ?? 0,
   page: 1,
 
@@ -125,14 +128,26 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
       writeNoteListCache(notes, pagination.total);
 
+=======
+  error: null,
+  total: 0,
+  page: 1,
+
+  fetchNotes: async (params?: NoteQueryParams) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await noteService.getNotes({ ...params, page: get().page });
+      const { notes, pagination } = response.data.data;
+>>>>>>> Stashed changes
       set({ notes, total: pagination.total, loading: false });
-    } catch (error) {
-      set({ loading: false });
-      console.error('获取笔记列表失败:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '获取笔记列表失败';
+      set({ loading: false, error: message });
     }
   },
 
   fetchNote: async (id: string) => {
+<<<<<<< Updated upstream
     const cachedNote = getCachedNote(id);
     if (cachedNote) {
       set({ currentNote: cachedNote, loading: false });
@@ -173,13 +188,33 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       writeNoteListCache(nextNotes, get().total + 1);
 
       set({ notes: nextNotes, total: get().total + 1 });
+=======
+    set({ loading: true, error: null });
+    try {
+      const response = await noteService.getNote(id);
+      set({ currentNote: response.data.data, loading: false });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '获取笔记详情失败';
+      set({ loading: false, currentNote: null, error: message });
+    }
+  },
+
+  createNote: async (data: CreateNoteData) => {
+    set({ error: null });
+    try {
+      const response = await noteService.createNote(data);
+      const newNote = response.data.data;
+      set({ notes: [newNote, ...get().notes], total: get().total + 1 });
+>>>>>>> Stashed changes
       return newNote;
-    } catch (error) {
-      console.error('创建笔记失败:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '创建笔记失败';
+      set({ error: message });
       throw error;
     }
   },
 
+<<<<<<< Updated upstream
   updateNote: async (id: string, data: any) => {
     try {
       const response = await noteService.updateNote(id, data);
@@ -189,17 +224,26 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       cacheNote(updatedNote);
       writeNoteListCache(nextNotes, get().total);
 
+=======
+  updateNote: async (id: string, data: UpdateNoteData) => {
+    set({ error: null });
+    try {
+      const response = await noteService.updateNote(id, data);
+      const updatedNote = response.data.data;
+>>>>>>> Stashed changes
       set({
         notes: nextNotes,
         currentNote: get().currentNote?.id === id ? updatedNote : get().currentNote,
       });
-    } catch (error) {
-      console.error('更新笔记失败:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '更新笔记失败';
+      set({ error: message });
       throw error;
     }
   },
 
   deleteNote: async (id: string) => {
+    set({ error: null });
     try {
       await noteService.deleteNote(id);
       const nextNotes = get().notes.filter((note) => note.id !== id);
@@ -211,15 +255,18 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         total: get().total - 1,
         currentNote: get().currentNote?.id === id ? null : get().currentNote,
       });
-    } catch (error) {
-      console.error('删除笔记失败:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '删除笔记失败';
+      set({ error: message });
       throw error;
     }
   },
 
   restoreNote: async (id: string) => {
+    set({ error: null });
     try {
       const response = await noteService.restoreNote(id);
+<<<<<<< Updated upstream
       const restoredNote = response.data;
       const nextNotes = [restoredNote, ...get().notes];
 
@@ -229,11 +276,22 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       set({ notes: nextNotes, total: get().total + 1 });
     } catch (error) {
       console.error('恢复笔记失败:', error);
+=======
+      const restoredNote = response.data.data;
+      set({ notes: [restoredNote, ...get().notes], total: get().total + 1 });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '恢复笔记失败';
+      set({ error: message });
+>>>>>>> Stashed changes
       throw error;
     }
   },
 
   setPage: (page: number) => {
     set({ page });
+  },
+
+  clearError: () => {
+    set({ error: null });
   },
 }));

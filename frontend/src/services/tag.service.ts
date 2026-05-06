@@ -1,27 +1,25 @@
 import { api } from './api';
+import { Tag, ApiResponse, PaginatedResponse } from '../types/api.types';
 
 export const tagService = {
-  // 获取所有标签
-  getTags: () => api.get('/tags'),
+  getTags: (): Promise<ApiResponse<PaginatedResponse<Tag>>> =>
+    api.get('/tags'),
 
-  // 获取标签详情
-  getTag: (id: string) => api.get(`/tags/${id}`),
+  getTag: (id: string): Promise<ApiResponse<Tag>> =>
+    api.get(`/tags/${id}`),
 
-  // 创建标签
-  createTag: (data: { name: string; color?: string }) => api.post('/tags', data),
+  createTag: (data: { name: string; color?: string }): Promise<ApiResponse<Tag>> =>
+    api.post('/tags', data),
 
-  // 更新标签
-  updateTag: (id: string, data: { name?: string; color?: string }) =>
+  updateTag: (id: string, data: { name?: string; color?: string }): Promise<ApiResponse<Tag>> =>
     api.put(`/tags/${id}`, data),
 
-  // 删除标签
-  deleteTag: (id: string) => api.delete(`/tags/${id}`),
+  deleteTag: (id: string): Promise<ApiResponse<{ message: string }>> =>
+    api.delete(`/tags/${id}`),
 
-  // 为笔记添加标签
-  addToNote: (noteId: string, tagId: string) =>
+  addToNote: (noteId: string, tagId: string): Promise<ApiResponse<{ message: string }>> =>
     api.post(`/tags/note/${noteId}/${tagId}`),
 
-  // 从笔记移除标签
-  removeFromNote: (noteId: string, tagId: string) =>
+  removeFromNote: (noteId: string, tagId: string): Promise<ApiResponse<{ message: string }>> =>
     api.delete(`/tags/note/${noteId}/${tagId}`),
 };

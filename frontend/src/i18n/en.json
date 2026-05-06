@@ -13,7 +13,29 @@
     "confirm": "Confirm",
     "success": "Success",
     "error": "Error",
+<<<<<<< Updated upstream
     "warning": "Warning"
+=======
+    "warning": "Warning",
+    "toggleDark": "Toggle dark mode",
+    "toggleLight": "Toggle light mode",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "user": "User",
+    "logout": "Logout",
+    "back": "Back",
+    "unsaved": "Unsaved",
+    "saved": "Saved",
+    "titlePlaceholder": "Note title",
+    "addLink": "Add link",
+    "addImage": "Add image",
+    "pasteImageHint": "Or paste image (Ctrl/Cmd + V)",
+    "filter": "Filter",
+    "rename": "Rename",
+    "page": "Page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
+>>>>>>> Stashed changes
   },
   "auth": {
     "login": "Login",
@@ -132,7 +154,13 @@
     "lineHeight": "Line Height",
     "autoSave": "Auto Save",
     "autoSaveEnabled": "Enable auto save",
+<<<<<<< Updated upstream
     "autoSaveDelay": "Auto save delay (seconds)"
+=======
+    "autoSaveDelay": "Auto save delay (seconds)",
+    "avatarHelperText": "Supports jpg/png image links",
+    "imageTooLarge": "Image too large (max {{size}})"
+>>>>>>> Stashed changes
   },
   "export": {
     "export": "Export",

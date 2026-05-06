@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFolderStore } from '../../store/folder.store';
 import { useTagStore } from '../../store/tag.store';
+<<<<<<< Updated upstream
 import {
   Folder,
   Tag,
@@ -14,9 +15,15 @@ import {
   MoreHorizontal,
   Search,
 } from 'lucide-react';
+=======
+import { Folder as FolderIcon, Tag as TagIcon, Plus, FileText, Trash2 } from 'lucide-react';
+>>>>>>> Stashed changes
 import { Button } from '../common/Button';
-import { Modal } from '../common/Modal';
-import { Input } from '../common/Input';
+import { FolderTree } from '../folder/FolderTree';
+import { TagList } from '../folder/TagList';
+import { SidebarDialogs } from '../folder/SidebarDialogs';
+import { SidebarContextMenu } from '../folder/SidebarContextMenu';
+import type { Folder, Tag } from '../../types/api.types';
 
 interface SidebarProps {
   onFolderSelect?: (folderId: string | null) => void;
@@ -50,10 +57,14 @@ const readStoredText = (key: string) => {
 
 function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: SidebarProps) {
   const navigate = useNavigate();
-  const { folders, createFolder, deleteFolder } = useFolderStore();
+  const { folders, createFolder, deleteFolder, updateFolder } = useFolderStore();
   const { tags, createTag, deleteTag } = useTagStore();
 
+<<<<<<< Updated upstream
   const [expandedFolders, setExpandedFolders] = useState<string[]>(() => readStoredArray(SIDEBAR_EXPANDED_FOLDERS_KEY));
+=======
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
+>>>>>>> Stashed changes
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showNewTag, setShowNewTag] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -63,6 +74,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   const [tagQuery, setTagQuery] = useState(() => readStoredText(SIDEBAR_TAG_QUERY_KEY));
   const [contextMenu, setContextMenu] = useState<{ type: 'folder' | 'tag'; id: string; x: number; y: number } | null>(null);
 
+<<<<<<< Updated upstream
   useEffect(() => {
     localStorage.setItem(SIDEBAR_EXPANDED_FOLDERS_KEY, JSON.stringify(expandedFolders));
   }, [expandedFolders]);
@@ -74,6 +86,14 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
   useEffect(() => {
     localStorage.setItem(SIDEBAR_TAG_QUERY_KEY, tagQuery);
   }, [tagQuery]);
+=======
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<{ type: 'folder' | 'tag'; id: string; name: string } | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'tag'; id: string; name: string } | null>(null);
+>>>>>>> Stashed changes
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) =>
@@ -96,6 +116,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
     setShowNewTag(false);
   };
 
+<<<<<<< Updated upstream
   const filterFolderTree = (folderList: any[], query: string): any[] => {
     if (!query.trim()) return folderList;
     const normalizedQuery = query.toLowerCase().trim();
@@ -166,6 +187,54 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
         </div>
       );
     });
+=======
+  const handleRename = (type: 'folder' | 'tag', id: string, currentName: string) => {
+    setRenameTarget({ type, id, name: currentName });
+    setRenameValue(currentName);
+    setShowRenameDialog(true);
+    setContextMenu(null);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!renameTarget || !renameValue.trim()) return;
+    if (renameTarget.type === 'folder') {
+      await updateFolder(renameTarget.id, { name: renameValue.trim() });
+    }
+    setShowRenameDialog(false);
+    setRenameTarget(null);
+    setRenameValue('');
+  };
+
+  const handleDelete = (type: 'folder' | 'tag', id: string, name: string) => {
+    setDeleteTarget({ type, id, name });
+    setShowDeleteDialog(true);
+    setContextMenu(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'folder') {
+      await deleteFolder(deleteTarget.id);
+    } else {
+      await deleteTag(deleteTarget.id);
+    }
+    setShowDeleteDialog(false);
+    setDeleteTarget(null);
+  };
+
+  const handleContextMenu = (type: 'folder' | 'tag', id: string, x: number, y: number) => {
+    setContextMenu({ type, id, x, y });
+  };
+
+  const handleSelectFolder = (folderId: string) => {
+    onFolderSelect?.(folderId);
+    navigate(`/notes?folderId=${folderId}`);
+  };
+
+  const handleSelectTag = (tagId: string) => {
+    onTagSelect?.(tagId);
+    navigate(`/notes?tagId=${tagId}`);
+>>>>>>> Stashed changes
   };
 
   const presetColors = [
@@ -191,9 +260,16 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
             onTagSelect?.(null);
             navigate('/notes');
           }}
+<<<<<<< Updated upstream
           className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
             !selectedFolder && !selectedTag ? 'bg-[#10a37f]/20 text-[#10a37f]' : 'hover:bg-[#363636]'
           }`}
+=======
+          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded
+            ${!selectedFolder && !selectedTag
+              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+              : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+>>>>>>> Stashed changes
         >
           <FileText size={16} className={!selectedFolder && !selectedTag ? 'text-[#10a37f]' : 'text-[#888888]'} />
           <span className="text-sm">所有笔记</span>
@@ -208,10 +284,26 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
             <Plus size={14} />
           </button>
         </div>
+<<<<<<< Updated upstream
         <div className="px-2 pb-2">
           <Input placeholder="搜索文件夹..." value={folderQuery} onChange={(e) => setFolderQuery(e.target.value)} icon={<Search size={14} />} />
         </div>
         {filteredFolders.length > 0 ? renderFolderTree(filteredFolders) : <p className="px-2 py-1 text-sm text-[#888888]">暂无匹配文件夹</p>}
+=======
+
+        {folders.length > 0 ? (
+          <FolderTree
+            folders={folders}
+            expandedFolders={expandedFolders}
+            selectedFolder={selectedFolder || null}
+            onToggleFolder={toggleFolder}
+            onSelectFolder={handleSelectFolder}
+            onContextMenu={handleContextMenu}
+          />
+        ) : (
+          <p className="text-sm text-gray-400 dark:text-gray-500 px-2 py-1">{t('folders.noFolders')}</p>
+        )}
+>>>>>>> Stashed changes
       </div>
 
       {/* 标签区域 */}
@@ -222,6 +314,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
             <Plus size={14} />
           </button>
         </div>
+<<<<<<< Updated upstream
         <div className="px-2 pb-2">
           <Input placeholder="搜索标签..." value={tagQuery} onChange={(e) => setTagQuery(e.target.value)} icon={<Search size={14} />} />
         </div>
@@ -251,6 +344,16 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
           })}
           {filteredTags.length === 0 && <p className="px-2 py-1 text-sm text-[#888888]">暂无匹配标签</p>}
         </div>
+=======
+
+        <TagList
+          tags={tags}
+          selectedTag={selectedTag || null}
+          onSelectTag={handleSelectTag}
+          onContextMenu={handleContextMenu}
+          t={t}
+        />
+>>>>>>> Stashed changes
       </div>
 
       {/* 回收站 */}
@@ -261,6 +364,7 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
         </button>
       </div>
 
+<<<<<<< Updated upstream
       {/* 新建文件夹模态框 */}
       <Modal isOpen={showNewFolder} onClose={() => setShowNewFolder(false)} title="新建文件夹" footer={
         <>
@@ -313,6 +417,43 @@ function Sidebar({ onFolderSelect, onTagSelect, selectedFolder, selectedTag }: S
           </div>
         </>
       )}
+=======
+      <SidebarDialogs
+        showNewFolder={showNewFolder}
+        showNewTag={showNewTag}
+        showRenameDialog={showRenameDialog}
+        showDeleteDialog={showDeleteDialog}
+        newFolderName={newFolderName}
+        newTagName={newTagName}
+        newTagColor={newTagColor}
+        renameValue={renameValue}
+        deleteTarget={deleteTarget}
+        onNewFolderNameChange={setNewFolderName}
+        onNewTagNameChange={setNewTagName}
+        onNewTagColorChange={setNewTagColor}
+        onRenameValueChange={setRenameValue}
+        onCloseNewFolder={() => setShowNewFolder(false)}
+        onCloseNewTag={() => setShowNewTag(false)}
+        onCloseRenameDialog={() => setShowRenameDialog(false)}
+        onCloseDeleteDialog={() => setShowDeleteDialog(false)}
+        onCreateFolder={handleCreateFolder}
+        onCreateTag={handleCreateTag}
+        onSaveRename={handleRenameSubmit}
+        onDeleteConfirm={handleDeleteConfirm}
+        presetColors={presetColors}
+        t={t}
+      />
+
+      <SidebarContextMenu
+        contextMenu={contextMenu}
+        folders={folders}
+        tags={tags}
+        onRename={handleRename}
+        onDelete={handleDelete}
+        onClose={() => setContextMenu(null)}
+        t={t}
+      />
+>>>>>>> Stashed changes
     </aside>
   );
 }

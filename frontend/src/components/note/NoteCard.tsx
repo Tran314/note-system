@@ -1,4 +1,4 @@
-import { Note } from '../../types/note.types';
+import { Note } from '../../types/api.types';
 import { Pin, Clock, Folder, Tag, Trash2, Edit } from 'lucide-react';
 import { timeAgo, truncate } from '../../utils/format';
 

@@ -1,11 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
+<<<<<<< Updated upstream
 import { Search, Bell, Settings, LogOut, User } from 'lucide-react';
+=======
+import { useSettingsStore } from '../../store/settings.store';
+import { useTranslation } from 'react-i18next';
+import { Search, Bell, Settings, LogOut, User, Moon, Sun } from 'lucide-react';
+>>>>>>> Stashed changes
 import { useState } from 'react';
 
 function Header() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { isDarkMode, toggleDarkMode } = useSettingsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -22,6 +29,13 @@ function Header() {
     }
   };
 
+<<<<<<< Updated upstream
+=======
+  const toggleDarkModeHandler = () => {
+    toggleDarkMode();
+  };
+
+>>>>>>> Stashed changes
   return (
     <header className="flex h-14 items-center justify-between border-b border-[#3a3a3a] bg-[#242424] px-4">
       {/* 搜索框 */}
@@ -38,11 +52,21 @@ function Header() {
         </div>
       </form>
 
+<<<<<<< Updated upstream
       {/* 右侧操作区 */}
       <div className="flex items-center gap-2">
         {/* 通知按钮 */}
         <button className="btn-ghost rounded-lg p-2" title="通知">
           <Bell size={18} />
+=======
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggleDarkModeHandler}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          title={isDarkMode ? t('common.toggleLight') : t('common.toggleDark')}
+        >
+          {isDarkMode ? <Sun size={20} className="text-gray-600 dark:text-gray-300" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
+>>>>>>> Stashed changes
         </button>
 
         {/* 设置按钮 */}

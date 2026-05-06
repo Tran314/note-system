@@ -22,7 +22,7 @@ describe('NoteService', () => {
     tags: [],
   };
 
-  const mockPrisma = {
+  const mockPrismaClient = {
     note: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -40,6 +40,16 @@ describe('NoteService', () => {
     tag: {
       findMany: jest.fn(),
     },
+<<<<<<< Updated upstream
+=======
+  };
+
+  const mockPrisma = {
+    ...mockPrismaClient,
+    $transaction: jest.fn(async (callback: (tx: typeof mockPrismaClient) => Promise<unknown>) => {
+      return callback(mockPrismaClient);
+    }),
+>>>>>>> Stashed changes
   };
 
   beforeEach(async () => {

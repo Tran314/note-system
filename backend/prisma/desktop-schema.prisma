@@ -1,0 +1,198 @@
+// Prisma schema for Desktop (SQLite)
+// Used by the Electron desktop app for local storage
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/desktop-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户模块 ====================
+
+/// 用户表
+model User {
+  id            String           @id @default(uuid())
+  email         String           @unique
+  passwordHash  String           @map("password_hash")
+  nickname      String?
+  avatarUrl     String?          @map("avatar_url")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  
+  // 关联关系
+  notes         Note[]
+  folders       Folder[]
+  tags          Tag[]
+  attachments   Attachment[]
+  settings      UserSettings?
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+/// 用户设置表
+model UserSettings {
+  userId           String    @id @map("user_id")
+  theme            String     @default("light")
+  editorFontSize   Int        @default(16) @map("editor_font_size")
+  autoSave         Boolean    @default(true) @map("auto_save")
+  autoSaveInterval Int        @default(30) @map("auto_save_interval")
+  defaultFolderId  String?    @map("default_folder_id")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  // 关联关系
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultFolder Folder?  @relation(fields: [defaultFolderId], references: [id])
+
+  @@map("user_settings")
+}
+
+/// 刷新令牌表
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @map("token_hash")
+  jti       String   @unique
+  expiresAt DateTime @map("expires_at")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jti])
+  @@map("refresh_tokens")
+}
+
+// ==================== 笔记模块 ====================
+
+/// 笔记表
+model Note {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  folderId  String?  @map("folder_id")
+  title     String
+  content   String?
+  isPinned  Boolean  @default(false) @map("is_pinned")
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder     Folder?       @relation(fields: [folderId], references: [id])
+  versions   NoteVersion[]
+  tags       NoteTag[]
+  attachments Attachment[]
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([updatedAt])
+  @@index([isDeleted])
+  @@map("notes")
+}
+
+/// 笔记版本表
+model NoteVersion {
+  id        String   @id @default(uuid())
+  noteId    String   @map("note_id")
+  version   Int
+  title     String
+  content   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([version])
+  @@unique([noteId, version])
+  @@map("note_versions")
+}
+
+// ==================== 文件夹模块 ====================
+
+/// 文件夹表（支持嵌套）
+model Folder {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  parentId  String?  @map("parent_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderHierarchy")
+  notes     Note[]
+  userSettings UserSettings[]
+
+  @@index([userId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+// ==================== 标签模块 ====================
+
+/// 标签表
+model Tag {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  color     String   @default("#6B7280")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes NoteTag[]
+
+  @@index([userId])
+  @@unique([userId, name])
+  @@map("tags")
+}
+
+/// 笔记 - 标签关联表（多对多）
+model NoteTag {
+  noteId String @map("note_id")
+  tagId  String @map("tag_id")
+
+  // 关联关系
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, tagId])
+  @@index([noteId])
+  @@index([tagId])
+  @@map("note_tags")
+}
+
+// ==================== 附件模块 ====================
+
+/// 附件表
+model Attachment {
+  id        String   @id @default(uuid())
+  noteId    String?  @map("note_id")
+  userId    String   @map("user_id")
+  filename  String
+  filePath  String   @map("file_path")
+  fileSize  Int      @map("file_size")
+  mimeType  String?  @map("mime_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  note Note? @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([userId])
+  @@map("attachments")
+}

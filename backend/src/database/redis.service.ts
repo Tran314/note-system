@@ -126,6 +126,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.del(`session:${userId}`);
   }
 
+<<<<<<< Updated upstream
   private getMemoryValue(key: string): string | null {
     const entry = this.memoryStore.get(key);
     if (!entry) {
@@ -145,5 +146,25 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       value,
       expiresAt: expiresIn ? Date.now() + expiresIn * 1000 : undefined,
     });
+=======
+  async incrLoginFailures(email: string): Promise<number> {
+    if (!this.client?.isOpen) return 0;
+    const key = `login_failures:${email}`;
+    const count = await this.client.incr(key);
+    if (count === 1) {
+      await this.client.expire(key, 900);
+    }
+    return count;
+  }
+
+  async resetLoginFailures(email: string): Promise<void> {
+    await this.del(`login_failures:${email}`);
+  }
+
+  async getLoginFailures(email: string): Promise<number> {
+    if (!this.client?.isOpen) return 0;
+    const count = await this.client.get(`login_failures:${email}`);
+    return count ? parseInt(count, 10) : 0;
+>>>>>>> Stashed changes
   }
 }
