@@ -4,4 +4,4 @@ export { Modal } from './Modal';
 export { Input } from './Input';
 export { Button } from './Button';
 export { ShortcutHelp } from './ShortcutHelp';
-export { Skeleton, NoteListSkeleton, NoteCardSkeleton, EditorSkeleton } from './Skeleton';
+export { Skeleton, NoteListSkeleton, NoteCardSkeleton, EditorSkeleton, GenericSkeleton } from './Skeleton';
