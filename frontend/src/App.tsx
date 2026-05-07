@@ -4,6 +4,7 @@ import { useAuthStore } from './store/auth.store';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/error/ErrorBoundary';
 import { Loading } from './components/common/Loading';
+import { NoteListSkeleton } from './components/common/Skeleton';
 import { getStoredAccessToken } from './utils/auth-storage';
 
 // 懒加载页面组件（性能优化）
@@ -31,11 +32,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 // 悬浮加载组件（优化用户体验）
 function PageLoader() {
-  return (
-    <div className="nebula-shell flex min-h-screen items-center justify-center">
-      <Loading text="加载页面..." />
-    </div>
-  );
+  return <NoteListSkeleton />;
 }
 
 function App() {
