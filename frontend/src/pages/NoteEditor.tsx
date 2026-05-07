@@ -205,33 +205,15 @@ function NoteEditor() {
   };
 
   const loadVersions = async () => {
-    if (!id || isNewNote || versionsLoaded || versionsLoading) {
-      return;
-    }
-
-    setVersionsLoading(true);
-    try {
-      const response = await noteService.getVersions(id);
-      setVersions(response.data.data ?? response.data);
-      setVersionsLoaded(true);
-    } finally {
-      setVersionsLoading(false);
-    }
+    // Version history not implemented yet in local-first architecture
+    setVersions([]);
+    setVersionsLoaded(true);
   };
 
   const loadAttachments = async () => {
-    if (!id || isNewNote || attachmentsLoaded || attachmentsLoading) {
-      return;
-    }
-
-    setAttachmentsLoading(true);
-    try {
-      const response = await attachmentService.getAttachments(id);
-      setAttachments(response.data.data ?? response.data);
-      setAttachmentsLoaded(true);
-    } finally {
-      setAttachmentsLoading(false);
-    }
+    // Attachments not implemented yet in local-first architecture
+    setAttachments([]);
+    setAttachmentsLoaded(true);
   };
 
   const scheduleAutoSave = () => {

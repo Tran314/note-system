@@ -1,6 +1,6 @@
 export const attachmentService = {
-  getAttachments: async (noteId?: string) => {
+  getAttachments: async (_noteId?: string) => {
     // Placeholder - attachments not implemented yet
-    return { data: [] };
+    return [];
   },
 };

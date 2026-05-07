@@ -68,7 +68,7 @@ export class TagService {
     if (!note) throw new Error('Note not found');
     
     await localDb.notes.update(noteId, {
-      tags: note.tags.filter(t => t !== tagId),
+      tags: note.tags.filter((t: string) => t !== tagId),
       updatedAt: new Date().toISOString(),
       syncedAt: null,
     });

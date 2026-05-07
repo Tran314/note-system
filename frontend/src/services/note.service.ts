@@ -37,23 +37,23 @@ export class NoteService {
     
     const allNotes = await query.toArray();
     
-    let filtered = allNotes;
+    let filtered: LocalNote[] = allNotes;
     if (params?.keyword) {
       const keyword = params.keyword.toLowerCase();
-      filtered = allNotes.filter(n => 
+      filtered = allNotes.filter((n: LocalNote) => 
         n.title.toLowerCase().includes(keyword) || 
         (n.content && n.content.toLowerCase().includes(keyword))
       );
     }
     
-    const sorted = filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    const sorted = filtered.sort((a: LocalNote, b: LocalNote) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     const page = params?.page || 1;
     const limit = params?.limit || 20;
     const start = (page - 1) * limit;
     const paginated = sorted.slice(start, start + limit);
     
     return {
-      notes: paginated.map(n => ({
+      notes: paginated.map((n: LocalNote) => ({
         id: n.id,
         title: n.title,
         updatedAt: n.updatedAt,
