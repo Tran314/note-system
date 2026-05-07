@@ -4,6 +4,7 @@ import { useAuthStore } from './store/auth.store';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/error/ErrorBoundary';
 import { Loading } from './components/common/Loading';
+import { getStoredAccessToken } from './utils/auth-storage';
 
 // 懒加载页面组件（性能优化）
 const Login = lazy(() => import('./pages/Login'));
@@ -18,7 +19,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   
   // 快速判断：立即从 localStorage 读取，不等待 hydration
-  const storedToken = localStorage.getItem('accessToken');
+  const storedToken = getStoredAccessToken();
   
   // 有 token 或 isAuthenticated 都允许访问
   if (!isAuthenticated && !storedToken) {
