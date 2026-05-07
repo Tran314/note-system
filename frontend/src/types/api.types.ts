@@ -14,9 +14,6 @@ export interface LoginResponse {
 export interface RegisterResponse {
   user: User;
   accessToken: string;
-<<<<<<< Updated upstream
-}
-=======
   refreshToken: string;
 }
 
@@ -119,4 +116,26 @@ export interface BatchUpdateItem {
     tags?: string[];
   };
 }
->>>>>>> Stashed changes
+
+export interface NoteQueryParams {
+  folderId?: string;
+  tagId?: string;
+  keyword?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateNoteData {
+  title: string;
+  content?: string;
+  folderId?: string;
+  tags?: string[];
+}
+
+export interface UpdateNoteData {
+  title?: string;
+  content?: string;
+  folderId?: string;
+  isPinned?: boolean;
+  tags?: string[];
+}

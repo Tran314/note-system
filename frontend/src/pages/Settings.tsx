@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-import { useState } from 'react';
-=======
 import { useState, useEffect } from 'react';
->>>>>>> Stashed changes
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,6 +7,7 @@ import { useSettingsStore } from '../store/settings.store';
 import { User, Lock, Palette, Save } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
+import { useTranslation } from 'react-i18next';
 
 const profileSchema = z.object({
   nickname: z.string().min(1, '昵称不能为空').max(50, '昵称最多 50 个字符'),
@@ -32,15 +29,12 @@ type ProfileForm = z.infer<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 
 function Settings() {
+  const { t } = useTranslation();
   const { user, setUser } = useAuthStore();
   const { fontSize, autoSaveEnabled, setFontSize, setAutoSaveEnabled, isDarkMode, setDarkMode } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'appearance'>('profile');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-<<<<<<< Updated upstream
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-=======
->>>>>>> Stashed changes
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -109,17 +103,10 @@ function Settings() {
     }
   };
 
-<<<<<<< Updated upstream
-  const tabs = [
-    { id: 'profile', label: '个人资料', icon: User },
-    { id: 'password', label: '密码修改', icon: Lock },
-    { id: 'appearance', label: '外观设置', icon: Palette },
-=======
   const tabs: { id: 'profile' | 'password' | 'appearance'; label: string; icon: typeof User }[] = [
     { id: 'profile', label: t('settings.profile'), icon: User },
     { id: 'password', label: t('settings.changePassword'), icon: Lock },
     { id: 'appearance', label: t('settings.appearance'), icon: Palette },
->>>>>>> Stashed changes
   ];
 
   return (
@@ -221,13 +208,6 @@ function Settings() {
       )}
 
       {activeTab === 'appearance' && (
-<<<<<<< Updated upstream
-        <div className="card space-y-6">
-          <div>
-            <h2 className="mb-1 text-lg font-medium text-stone-900">外观设置</h2>
-            <p className="text-sm text-stone-500">让界面更适合你的日常使用习惯</p>
-          </div>
-=======
         <div className="card">
           <h2 className="font-medium mb-4">{t('settings.appearance')}</h2>
           
@@ -257,55 +237,35 @@ function Settings() {
                 </button>
               </div>
             </div>
->>>>>>> Stashed changes
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">主题</label>
-            <div className="grid gap-3 md:grid-cols-2">
-              <button
-                onClick={() => document.documentElement.classList.remove('dark')}
-                className="rounded-[22px] border border-stone-200/80 bg-white/65 p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300"
-              >
-                <div className="mb-3 h-24 rounded-2xl border border-stone-200/70 bg-[linear-gradient(180deg,#fffcf8_0%,#f2ece2_100%)]" />
-                <span className="text-sm font-medium text-stone-800">浅色</span>
-              </button>
-              <button
-                onClick={() => document.documentElement.classList.add('dark')}
-                className="rounded-[22px] border border-stone-200/80 bg-white/65 p-4 text-left transition hover:-translate-y-0.5 hover:border-stone-300"
-              >
-                <div className="mb-3 h-24 rounded-2xl border border-stone-700/70 bg-[linear-gradient(180deg,#2c241d_0%,#151311_100%)]" />
-                <span className="text-sm font-medium text-stone-800">深色</span>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">编辑器字号</label>
-            <select className="input-field" defaultValue="16">
-              <option value="14">14px</option>
-              <option value="16">16px</option>
-              <option value="18">18px</option>
-              <option value="20">20px</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between rounded-[22px] border border-stone-200/70 bg-white/45 px-4 py-4">
             <div>
-              <label className="block text-sm font-medium text-stone-800">自动保存</label>
-              <p className="text-sm text-stone-500">编辑时自动保存笔记，减少手动操作</p>
+              <label className="mb-2 block text-sm font-medium text-stone-700">编辑器字号</label>
+              <select className="input-field" defaultValue="16">
+                <option value="14">14px</option>
+                <option value="16">16px</option>
+                <option value="18">18px</option>
+                <option value="20">20px</option>
+              </select>
             </div>
-            <button
-              onClick={() => setAutoSaveEnabled((value) => !value)}
-              className={`relative h-7 w-14 rounded-full transition ${
-                autoSaveEnabled ? 'bg-stone-800' : 'bg-stone-300'
-              }`}
-            >
-              <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
-                  autoSaveEnabled ? 'right-1' : 'left-1'
+
+            <div className="flex items-center justify-between rounded-[22px] border border-stone-200/70 bg-white/45 px-4 py-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-800">自动保存</label>
+                <p className="text-sm text-stone-500">编辑时自动保存笔记，减少手动操作</p>
+              </div>
+              <button
+                onClick={() => setAutoSaveEnabled((value) => !value)}
+                className={`relative h-7 w-14 rounded-full transition ${
+                  autoSaveEnabled ? 'bg-stone-800' : 'bg-stone-300'
                 }`}
-              />
-            </button>
+              >
+                <span
+                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+                    autoSaveEnabled ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
       )}
