@@ -64,6 +64,12 @@ frontend/dist/
 *.key
 secrets/
 
+<<<<<<< Updated upstream
 # Package locks (optional - some teams prefer to commit)
 # package-lock.json
 # pnpm-lock.yaml
+=======
+# Package locks (commit for reproducible builds)
+package-lock.json
+pnpm-lock.yaml
+>>>>>>> Stashed changes

@@ -7,7 +7,8 @@ import { FileText, Pin, Trash2, Clock, Folder, Tag, Plus, Search, Grid, List } f
 import { timeAgo, truncate } from '../utils/format';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
-import { Note } from '../types/note.types';
+import { NoteCardSkeleton } from '../components/common/Skeleton';
+import { Note, NoteTag } from '../types/api.types';
 
 const NOTE_LIST_SEARCH_KEY = 'note-list-search';
 const NOTE_LIST_VIEW_MODE_KEY = 'note-list-view-mode';
@@ -17,7 +18,7 @@ const normalizeSearchText = (value: string) => value.toLowerCase().replace(/\s+/
 
 const buildSearchIndex = (note: Note) =>
   normalizeSearchText(
-    [note.title, note.content, note.folder?.name, ...(note.tags?.map((nt) => nt.tag?.name || '') || [])]
+    [note.title, note.content, note.folder?.name, ...(note.tags?.map((nt: NoteTag) => nt.tag?.name || '') || [])]
       .filter(Boolean)
       .join(' '),
   );
@@ -40,7 +41,7 @@ const readStoredViewMode = (): 'list' | 'grid' => {
 
 function NoteList() {
   const navigate = useNavigate();
-  const { notes, loading, fetchNotes, deleteNote, prefetchNote } = useNoteStore();
+  const { notes, loading, fetchNotes, deleteNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { tags, fetchTags } = useTagStore();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -124,8 +125,6 @@ function NoteList() {
     <div
       key={note.id}
       onClick={() => navigate(`/notes/${note.id}`)}
-      onMouseEnter={() => void prefetchNote(note.id)}
-      onFocus={() => void prefetchNote(note.id)}
       className={`note-item group ${className}`}
     >
       {/* 标题行 */}
@@ -161,7 +160,7 @@ function NoteList() {
         {note.tags && note.tags.length > 0 && (
           <div className="flex items-center gap-1">
             <Tag size={12} />
-            {note.tags.slice(0, 3).map((nt) => (
+            {note.tags.slice(0, 3).map((nt: NoteTag) => (
               <button
                 key={nt.tagId}
                 onClick={(e) => { e.stopPropagation(); setSelectedTag(nt.tagId); }}
@@ -224,10 +223,14 @@ function NoteList() {
         )}
       </div>
 
-      {/* 笔记列表 */}
+{/* 笔记列表 */}
       <div ref={scrollContainerRef} onScroll={viewMode === 'list' ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined} className="flex-1 overflow-auto">
         {loading ? (
-          <div className="py-8 text-center text-[#888888]">加载中...</div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <NoteCardSkeleton key={i} />
+            ))}
+          </div>
         ) : displayedNotes.length === 0 ? (
           <div className="py-12 text-center text-[#888888]">
             <FileText size={48} className="mx-auto mb-3 opacity-50" />

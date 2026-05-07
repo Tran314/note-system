@@ -1,43 +1,49 @@
-import { useEffect, useCallback } from 'react';
-import { useNoteStore } from '../store/note.store';
+import { useEffect, useCallback, useRef } from 'react';
 
 interface UseAutoSaveOptions {
-  noteId: string;
+  enabled?: boolean;
   delay?: number;
+  onSave: () => Promise<void>;
 }
 
-/**
- * 笔记自动保存 Hook
- * @param noteId 笔记ID
- * @param delay 防抖延迟（毫秒），默认 2000ms
- */
-export function useAutoSave({ noteId, delay = 2000 }: UseAutoSaveOptions) {
-  const { updateNote, currentNote } = useNoteStore();
-
-  const save = useCallback(async () => {
-    if (!currentNote || currentNote.id !== noteId) return;
-    
-    try {
-      await updateNote(noteId, {
-        title: currentNote.title,
-        content: currentNote.content,
-      });
-      return true;
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      return false;
-    }
-  }, [noteId, currentNote, updateNote]);
+export function useAutoSave({ enabled = true, delay = 2000, onSave }: UseAutoSaveOptions) {
+  const saveRef = useRef(onSave);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!currentNote || currentNote.id !== noteId) return;
+    saveRef.current = onSave;
+  }, [onSave]);
 
-    const timer = setTimeout(() => {
-      save();
+  const triggerSave = useCallback(() => {
+    if (!enabled) return;
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      saveRef.current();
     }, delay);
 
-    return () => clearTimeout(timer);
-  }, [currentNote?.content, currentNote?.title, delay, noteId, save]);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [enabled, delay]);
 
-  return { save };
+  useEffect(() => {
+    const cleanup = triggerSave();
+    return cleanup;
+  }, [triggerSave]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  return { triggerSave };
 }

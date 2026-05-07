@@ -5,14 +5,18 @@
 set -e
 
 ENVIRONMENT=${1:-production}
-PROJECT_DIR="/opt/note-system"
-BACKUP_DIR="/opt/note-system-backups"
+
+# Get script directory for flexible deployment location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="${PROJECT_DIR:-$SCRIPT_DIR}"
+BACKUP_DIR="${BACKUP_DIR:-$PROJECT_DIR/backups}"
 
 echo "🚀 Deploying Note System to $ENVIRONMENT..."
 
 # Check if project directory exists
 if [ ! -d "$PROJECT_DIR" ]; then
     echo "❌ Project directory not found: $PROJECT_DIR"
+    echo "   Set PROJECT_DIR environment variable or ensure running from project root"
     exit 1
 fi
 

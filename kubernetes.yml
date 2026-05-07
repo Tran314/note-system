@@ -111,7 +111,17 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
+<<<<<<< Updated upstream
           command: ["redis-server", "--appendonly", "yes"]
+=======
+          command: ["redis-server", "--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: note-secrets
+                  key: REDIS_PASSWORD
+>>>>>>> Stashed changes
           ports:
             - containerPort: 6379
           volumeMounts:

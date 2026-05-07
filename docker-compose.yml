@@ -11,14 +11,22 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-notepass123}
       POSTGRES_DB: ${DB_NAME:-notesystem}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${DB_PORT:-5432}:5432"
+      - postgres_data:/var/libgresql/data
+    # ports:
+    #   - "${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-noteuser}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
   # Redis Cache
   redis:
@@ -28,13 +36,21 @@ services:
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass123}
     volumes:
       - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # ports:
+    #   - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispass123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
   # Backend API
   backend:
@@ -67,6 +83,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
 
   # Frontend Web
   frontend:
@@ -80,6 +104,14 @@ services:
         condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-3000}:80"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
 volumes:
   postgres_data:

@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import CodeBlock from '@tiptap/extension-code-block';
 import {
   Bold,
   Italic,
@@ -25,15 +20,19 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
+import { EditorSkeleton } from '../components/common/Skeleton';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { noteService } from '../services/note.service';
 import { attachmentService } from '../services/attachment.service';
-import { Attachment, NoteVersion } from '../types/note.types';
+import { Attachment, NoteVersion } from '../types/api.types';
+import type { EditorRef } from '../components/note/RichTextEditor';
+
+const RichTextEditor = lazy(() => import('../components/note/RichTextEditor'));
 
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { notes, currentNote, fetchNote, prefetchNote, createNote, updateNote, loading } =
+  const { notes, currentNote, fetchNote, createNote, updateNote, loading } =
     useNoteStore();
 
   const [title, setTitle] = useState('');
@@ -53,44 +52,13 @@ function NoteEditor() {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedTitleRef = useRef('');
   const lastSavedContentRef = useRef('');
+  const editorRef = useRef<EditorRef>(null);
 
   const isNewNote = id === 'new';
 
   const currentIndex = useMemo(() => notes.findIndex((note) => note.id === id), [notes, id]);
   const previousNote = currentIndex > 0 ? notes[currentIndex - 1] : null;
   const nextNote = currentIndex >= 0 && currentIndex < notes.length - 1 ? notes[currentIndex + 1] : null;
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Placeholder.configure({
-        placeholder: '开始编写...',
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline',
-        },
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg',
-        },
-      }),
-      CodeBlock.configure({
-        HTMLAttributes: {
-          class: 'bg-gray-100 p-4 rounded-lg font-mono text-sm',
-        },
-      }),
-    ],
-    content: '',
-    onUpdate: () => {
-      setHasUnsavedChanges(true);
-      scheduleAutoSave();
-    },
-  });
 
   useEffect(() => {
     if (!isNewNote && id) {
@@ -102,19 +70,12 @@ function NoteEditor() {
     if (!id || isNewNote) {
       return;
     }
-
-    if (previousNote) {
-      void prefetchNote(previousNote.id);
-    }
-    if (nextNote) {
-      void prefetchNote(nextNote.id);
-    }
-  }, [id, isNewNote, previousNote, nextNote, prefetchNote]);
+  }, [id, isNewNote]);
 
   useEffect(() => {
-    if (isNewNote && editor) {
+    if (isNewNote && editorRef.current) {
       setTitle('');
-      editor.commands.setContent('');
+      editorRef.current.setContent('');
       lastSavedTitleRef.current = '';
       lastSavedContentRef.current = '';
       setLastSaved(null);
@@ -126,9 +87,9 @@ function NoteEditor() {
       return;
     }
 
-    if (currentNote && editor) {
+    if (currentNote && editorRef.current) {
       setTitle(currentNote.title);
-      editor.commands.setContent(currentNote.content || '');
+      editorRef.current.setContent(currentNote.content || '');
       lastSavedTitleRef.current = currentNote.title;
       lastSavedContentRef.current = currentNote.content || '';
       setLastSaved(new Date(currentNote.updatedAt));
@@ -138,7 +99,7 @@ function NoteEditor() {
       setVersionsLoaded(false);
       setAttachmentsLoaded(false);
     }
-  }, [currentNote, editor, isNewNote]);
+  }, [currentNote, isNewNote]);
 
   useEffect(() => {
     return () => {
@@ -149,9 +110,9 @@ function NoteEditor() {
   }, []);
 
   const handleSave = async (isAutoSave = false) => {
-    const content = editor?.getHTML() || '';
+    const content = editorRef.current?.getEditor()?.getHTML() || '';
 
-    if (!title.trim() && !editor?.getText().trim()) {
+    if (!title.trim() && !editorRef.current?.getEditor()?.getText().trim()) {
       if (!isAutoSave) {
         alert('请输入标题或内容');
       }
@@ -212,7 +173,7 @@ function NoteEditor() {
     setVersionsLoading(true);
     try {
       const response = await noteService.getVersions(id);
-      setVersions(response.data.data ?? response.data);
+      setVersions(response.data.versions ?? []);
       setVersionsLoaded(true);
     } finally {
       setVersionsLoading(false);
@@ -240,7 +201,7 @@ function NoteEditor() {
     }
 
     autoSaveTimerRef.current = setTimeout(() => {
-      if (title.trim() || editor?.getText().trim()) {
+      if (title.trim() || editorRef.current?.getEditor()?.getText().trim()) {
         void handleSave(true);
       }
     }, 2000);
@@ -256,13 +217,13 @@ function NoteEditor() {
     {
       key: 'b',
       ctrl: true,
-      action: () => editor?.chain().focus().toggleBold().run(),
+      action: () => editorRef.current?.getEditor()?.chain().focus().toggleBold().run(),
       description: '加粗',
     },
     {
       key: 'i',
       ctrl: true,
-      action: () => editor?.chain().focus().toggleItalic().run(),
+      action: () => editorRef.current?.getEditor()?.chain().focus().toggleItalic().run(),
       description: '斜体',
     },
     {
@@ -294,19 +255,19 @@ function NoteEditor() {
   }, [hasUnsavedChanges]);
 
   const toolbarItems = [
-    { icon: Bold, action: () => editor?.chain().focus().toggleBold().run(), title: '加粗', active: editor?.isActive('bold') },
-    { icon: Italic, action: () => editor?.chain().focus().toggleItalic().run(), title: '斜体', active: editor?.isActive('italic') },
-    { icon: Code, action: () => editor?.chain().focus().toggleCode().run(), title: '代码', active: editor?.isActive('code') },
-    { icon: Quote, action: () => editor?.chain().focus().toggleBlockquote().run(), title: '引用', active: editor?.isActive('blockquote') },
-    { icon: List, action: () => editor?.chain().focus().toggleBulletList().run(), title: '无序列表', active: editor?.isActive('bulletList') },
-    { icon: ListOrdered, action: () => editor?.chain().focus().toggleOrderedList().run(), title: '有序列表', active: editor?.isActive('orderedList') },
-    { icon: LinkIcon, action: () => setShowLinkDialog(true), title: '链接', active: editor?.isActive('link') },
+    { icon: Bold, action: () => editorRef.current?.getEditor()?.chain().focus().toggleBold().run(), title: '加粗', active: editorRef.current?.getEditor()?.isActive('bold') },
+    { icon: Italic, action: () => editorRef.current?.getEditor()?.chain().focus().toggleItalic().run(), title: '斜体', active: editorRef.current?.getEditor()?.isActive('italic') },
+    { icon: Code, action: () => editorRef.current?.getEditor()?.chain().focus().toggleCode().run(), title: '代码', active: editorRef.current?.getEditor()?.isActive('code') },
+    { icon: Quote, action: () => editorRef.current?.getEditor()?.chain().focus().toggleBlockquote().run(), title: '引用', active: editorRef.current?.getEditor()?.isActive('blockquote') },
+    { icon: List, action: () => editorRef.current?.getEditor()?.chain().focus().toggleBulletList().run(), title: '无序列表', active: editorRef.current?.getEditor()?.isActive('bulletList') },
+    { icon: ListOrdered, action: () => editorRef.current?.getEditor()?.chain().focus().toggleOrderedList().run(), title: '有序列表', active: editorRef.current?.getEditor()?.isActive('orderedList') },
+    { icon: LinkIcon, action: () => setShowLinkDialog(true), title: '链接', active: editorRef.current?.getEditor()?.isActive('link') },
     { icon: ImageIcon, action: () => setShowImageDialog(true), title: '图片', active: false },
   ];
 
   const handleAddLink = () => {
     if (linkUrl) {
-      editor?.chain().focus().setLink({ href: linkUrl }).run();
+      editorRef.current?.getEditor()?.chain().focus().setLink({ href: linkUrl }).run();
     }
     setShowLinkDialog(false);
     setLinkUrl('');
@@ -314,13 +275,14 @@ function NoteEditor() {
 
   const handleAddImage = () => {
     if (imageUrl) {
-      editor?.chain().focus().setImage({ src: imageUrl }).run();
+      editorRef.current?.getEditor()?.chain().focus().setImage({ src: imageUrl }).run();
     }
     setShowImageDialog(false);
     setImageUrl('');
   };
 
   useEffect(() => {
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
     const handlePaste = async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -330,9 +292,13 @@ function NoteEditor() {
           e.preventDefault();
           const file = item.getAsFile();
           if (file) {
+            if (file.size > MAX_IMAGE_SIZE) {
+              alert('图片大小不能超过 5MB');
+              return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
-              editor?.chain().focus().setImage({ src: reader.result as string }).run();
+              editorRef.current?.getEditor()?.chain().focus().setImage({ src: reader.result as string }).run();
             };
             reader.readAsDataURL(file);
           }
@@ -342,7 +308,7 @@ function NoteEditor() {
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [editor]);
+  }, []);
 
   if (loading && !isNewNote) {
     return <div className="flex h-full items-center justify-center">加载中...</div>;
@@ -431,10 +397,16 @@ function NoteEditor() {
         </div>
 
         <div className="flex-1 overflow-auto">
-          <EditorContent
-            editor={editor}
-            className="prose prose-sm min-h-[400px] max-w-none p-4"
-          />
+          <Suspense fallback={<EditorSkeleton />}>
+            <RichTextEditor
+              ref={editorRef}
+              content={currentNote?.content || ''}
+              onUpdate={() => {
+                setHasUnsavedChanges(true);
+                scheduleAutoSave();
+              }}
+            />
+          </Suspense>
         </div>
       </div>
 

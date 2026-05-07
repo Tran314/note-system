@@ -1,27 +1,48 @@
-import { api } from './api';
+import { localDb } from './local-db.service';
+import { generateUUID } from '../utils/uuid';
 
-export const tagService = {
-  // 获取所有标签
-  getTags: () => api.get('/tags'),
+export interface Tag {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
 
-  // 获取标签详情
-  getTag: (id: string) => api.get(`/tags/${id}`),
+const userId = import.meta.env.VITE_DEFAULT_USER_ID || 'test-user-001';
 
-  // 创建标签
-  createTag: (data: { name: string; color?: string }) => api.post('/tags', data),
+export class TagService {
+  async fetchTags(): Promise<Tag[]> {
+    return await localDb.tags.where('userId').equals(userId).toArray();
+  }
 
-  // 更新标签
-  updateTag: (id: string, data: { name?: string; color?: string }) =>
-    api.put(`/tags/${id}`, data),
+  async createTag(data: { name: string; color?: string }): Promise<Tag> {
+    const tagId = generateUUID();
+    const tag = {
+      id: tagId,
+      userId,
+      name: data.name,
+      color: data.color || '#6B7280',
+      createdAt: new Date().toISOString(),
+      syncedAt: null,
+    };
 
-  // 删除标签
-  deleteTag: (id: string) => api.delete(`/tags/${id}`),
+    await localDb.tags.add(tag);
+    return tag;
+  }
 
-  // 为笔记添加标签
-  addToNote: (noteId: string, tagId: string) =>
-    api.post(`/tags/note/${noteId}/${tagId}`),
+  async updateTag(tagId: string, data: { name?: string; color?: string }): Promise<Tag> {
+    const tag = await localDb.tags.get(tagId);
+    if (!tag) throw new Error('Tag not found');
 
-  // 从笔记移除标签
-  removeFromNote: (noteId: string, tagId: string) =>
-    api.delete(`/tags/note/${noteId}/${tagId}`),
-};
+    const updatedTag = { ...tag, ...data, syncedAt: null };
+    await localDb.tags.update(tagId, updatedTag);
+    return updatedTag;
+  }
+
+  async deleteTag(tagId: string): Promise<void> {
+    await localDb.tags.delete(tagId);
+  }
+}
+
+export const tagService = new TagService();

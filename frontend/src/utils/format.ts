@@ -92,11 +92,15 @@ export function throttle<T extends (...args: any[]) => any>(
 // 文件大小格式化
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
-  
+
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
+  if (i >= sizes.length) {
+    return parseFloat((bytes / Math.pow(k, sizes.length - 1)).toFixed(2)) + ' ' + sizes[sizes.length - 1];
+  }
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 

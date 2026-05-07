@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
-import { Search, Bell, Settings, LogOut, User } from 'lucide-react';
+import { useSettingsStore } from '../../store/settings.store';
+import { useTranslation } from 'react-i18next';
+import { Search, Settings, LogOut, User, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 
 function Header() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { isDarkMode, toggleDarkMode } = useSettingsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     logout();
@@ -20,6 +24,10 @@ function Header() {
       navigate(`/notes?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
     }
+  };
+
+  const toggleDarkModeHandler = () => {
+    toggleDarkMode();
   };
 
   return (
@@ -38,11 +46,13 @@ function Header() {
         </div>
       </form>
 
-      {/* 右侧操作区 */}
-      <div className="flex items-center gap-2">
-        {/* 通知按钮 */}
-        <button className="btn-ghost rounded-lg p-2" title="通知">
-          <Bell size={18} />
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggleDarkModeHandler}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          title={isDarkMode ? t('common.toggleLight') : t('common.toggleDark')}
+        >
+          {isDarkMode ? <Sun size={20} className="text-gray-600 dark:text-gray-300" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
         </button>
 
         {/* 设置按钮 */}

@@ -1,48 +1,60 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { noteService } from '../services/note.service';
+import type { Note, ApiResponse, NoteQueryResponse } from '../types/api.types';
 
-// 获取笔记列表
-export function useNotes(params?: {
+type NoteQueryParams = {
   folderId?: string;
   tagId?: string;
   keyword?: string;
   page?: number;
-}) {
-  return useQuery({
+};
+
+type CreateNoteData = {
+  title: string;
+  content?: string;
+  folderId?: string;
+  tags?: string[];
+};
+
+type UpdateNoteData = {
+  title?: string;
+  content?: string;
+  folderId?: string;
+  isPinned?: boolean;
+  tags?: string[];
+};
+
+export function useNotes(params?: NoteQueryParams) {
+  return useQuery<ApiResponse<NoteQueryResponse>>({
     queryKey: ['notes', params],
     queryFn: () => noteService.getNotes(params),
   });
 }
 
-// 获取单个笔记
 export function useNote(id: string) {
-  return useQuery({
+  return useQuery<ApiResponse<Note>>({
     queryKey: ['note', id],
     queryFn: () => noteService.getNote(id),
     enabled: !!id,
   });
 }
 
-// 创建笔记
 export function useCreateNote() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (data: { title: string; content?: string; folderId?: string }) =>
-      noteService.createNote(data),
+  return useMutation<ApiResponse<Note>, Error, CreateNoteData>({
+    mutationFn: (data) => noteService.createNote(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
   });
 }
 
-// 更新笔记
 export function useUpdateNote() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      noteService.updateNote(id, data),
+  return useMutation<ApiResponse<Note>, Error, { id: string; data: UpdateNoteData }>({
+    mutationFn: ({ id, data }) => noteService.updateNote(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['note', id] });
@@ -50,12 +62,11 @@ export function useUpdateNote() {
   });
 }
 
-// 删除笔记
 export function useDeleteNote() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (id: string) => noteService.deleteNote(id),
+  return useMutation<ApiResponse<{ message: string }>, Error, string>({
+    mutationFn: (id) => noteService.deleteNote(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
     },

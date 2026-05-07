@@ -13,7 +13,25 @@
     "confirm": "确认",
     "success": "成功",
     "error": "错误",
-    "warning": "警告"
+    "warning": "警告",
+    "toggleDark": "切换暗色模式",
+    "toggleLight": "切换亮色模式",
+    "notifications": "通知",
+    "settings": "设置",
+    "user": "用户",
+    "logout": "退出登录",
+    "back": "返回",
+    "unsaved": "未保存",
+    "saved": "已保存",
+    "titlePlaceholder": "笔记标题",
+    "addLink": "添加链接",
+    "addImage": "添加图片",
+    "pasteImageHint": "或直接粘贴图片（Ctrl/Cmd + V）",
+    "filter": "筛选",
+    "rename": "重命名",
+    "page": "页",
+    "previousPage": "上一页",
+    "nextPage": "下一页"
   },
   "auth": {
     "login": "登录",
@@ -132,7 +150,9 @@
     "lineHeight": "行高",
     "autoSave": "自动保存",
     "autoSaveEnabled": "启用自动保存",
-    "autoSaveDelay": "自动保存延迟(秒)"
+    "autoSaveDelay": "自动保存延迟(秒)",
+    "avatarHelperText": "支持 jpg/png 格式的图片链接",
+    "imageTooLarge": "图片过大（最大 {{size}}）"
   },
   "export": {
     "export": "导出",
