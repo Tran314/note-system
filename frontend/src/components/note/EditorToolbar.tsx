@@ -1,7 +1,7 @@
-import { Bold, Italic, List, ListOrdered, Code, Quote, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { LucideIcon, Bold, Italic, List, ListOrdered, Code, Quote, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 
 interface ToolbarItem {
-  icon: React.ComponentType<{ size: number }>;
+  icon: LucideIcon;
   action: () => void;
   title: string;
   active?: boolean;

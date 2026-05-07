@@ -21,7 +21,7 @@ export const useTagStore = create<TagState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await tagService.getTags();
-      set({ tags: response.data.data, loading: false });
+      set({ tags: response.data.items, loading: false });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '获取标签列表失败';
       set({ loading: false, error: message });
@@ -32,7 +32,7 @@ export const useTagStore = create<TagState>((set, get) => ({
     set({ error: null });
     try {
       const response = await tagService.createTag(data);
-      const newTag = response.data.data;
+      const newTag = response.data;
       set({ tags: [...get().tags, newTag] });
       return newTag;
     } catch (error: unknown) {
@@ -46,7 +46,7 @@ export const useTagStore = create<TagState>((set, get) => ({
     set({ error: null });
     try {
       const response = await tagService.updateTag(id, data);
-      const updatedTag = response.data.data;
+      const updatedTag = response.data;
       set({
         tags: get().tags.map((t) => (t.id === id ? updatedTag : t)),
       });

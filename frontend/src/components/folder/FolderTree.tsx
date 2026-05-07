@@ -71,7 +71,7 @@ export function FolderTree({
 
             {hasChildren && isExpanded && (
               <FolderTree
-                folders={folder.children}
+                folders={folder.children ?? []}
                 expandedFolders={expandedFolders}
                 selectedFolder={selectedFolder}
                 onToggleFolder={onToggleFolder}

@@ -1,52 +1,80 @@
 import { api } from './api';
-import { Note, BatchUpdateItem, NoteQueryResponse, ApiResponse, PaginatedResponse } from '../types/api.types';
+import { Note, BatchUpdateItem, NoteQueryResponse, ApiResponse, PaginatedResponse, NoteVersion } from '../types/api.types';
 
 export const noteService = {
-  getNotes: (params?: {
+  getNotes: async (params?: {
     folderId?: string;
     tagId?: string;
     keyword?: string;
     page?: number;
     limit?: number;
-  }): Promise<ApiResponse<NoteQueryResponse>> =>
-    api.get('/notes', { params }),
+  }): Promise<ApiResponse<NoteQueryResponse>> => {
+    const response = await api.get('/notes', { params });
+    return response.data;
+  },
 
-  getNotesBatch: (ids: string[]): Promise<ApiResponse<PaginatedResponse<Note>>> =>
-    api.get('/notes/batch', { params: { ids: ids.join(',') } }),
+  getNotesBatch: async (ids: string[]): Promise<ApiResponse<PaginatedResponse<Note>>> => {
+    const response = await api.get('/notes/batch', { params: { ids: ids.join(',') } });
+    return response.data;
+  },
 
-  getNote: (id: string): Promise<ApiResponse<Note>> =>
-    api.get(`/notes/${id}`),
+  getNote: async (id: string): Promise<ApiResponse<Note>> => {
+    const response = await api.get(`/notes/${id}`);
+    return response.data;
+  },
 
-  createNote: (data: { title: string; content?: string; folderId?: string; tags?: string[] }): Promise<ApiResponse<Note>> =>
-    api.post('/notes', data),
+  createNote: async (data: { title: string; content?: string; folderId?: string; tags?: string[] }): Promise<ApiResponse<Note>> => {
+    const response = await api.post('/notes', data);
+    return response.data;
+  },
 
-  createNotesBatch: (notes: Array<{ title: string; content?: string; folderId?: string; tags?: string[] }>): Promise<ApiResponse<PaginatedResponse<Note>>> =>
-    api.post('/notes/batch', { notes }),
+  createNotesBatch: async (notes: Array<{ title: string; content?: string; folderId?: string; tags?: string[] }>): Promise<ApiResponse<PaginatedResponse<Note>>> => {
+    const response = await api.post('/notes/batch', { notes });
+    return response.data;
+  },
 
-  updateNote: (id: string, data: { title?: string; content?: string; folderId?: string; isPinned?: boolean; tags?: string[] }): Promise<ApiResponse<Note>> =>
-    api.put(`/notes/${id}`, data),
+  updateNote: async (id: string, data: { title?: string; content?: string; folderId?: string; isPinned?: boolean; tags?: string[] }): Promise<ApiResponse<Note>> => {
+    const response = await api.put(`/notes/${id}`, data);
+    return response.data;
+  },
 
-  updateNotesBatch: (updates: BatchUpdateItem[]): Promise<ApiResponse<PaginatedResponse<Note>>> =>
-    api.put('/notes/batch', { updates }),
+  updateNotesBatch: async (updates: BatchUpdateItem[]): Promise<ApiResponse<PaginatedResponse<Note>>> => {
+    const response = await api.put('/notes/batch', { updates });
+    return response.data;
+  },
 
-  deleteNotesBatch: (ids: string[]): Promise<ApiResponse<{ deletedCount: number }>> =>
-    api.delete('/notes/batch', { data: { ids } }),
+  deleteNotesBatch: async (ids: string[]): Promise<ApiResponse<{ deletedCount: number }>> => {
+    const response = await api.delete('/notes/batch', { data: { ids } });
+    return response.data;
+  },
 
-  deleteNote: (id: string): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/notes/${id}`),
+  deleteNote: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await api.delete(`/notes/${id}`);
+    return response.data;
+  },
 
-  restoreNote: (id: string): Promise<ApiResponse<Note>> =>
-    api.post(`/notes/${id}/restore`),
+  restoreNote: async (id: string): Promise<ApiResponse<Note>> => {
+    const response = await api.post(`/notes/${id}/restore`);
+    return response.data;
+  },
 
-  restoreNotesBatch: (ids: string[]): Promise<ApiResponse<PaginatedResponse<Note>>> =>
-    api.post('/notes/batch/restore', { ids }),
+  restoreNotesBatch: async (ids: string[]): Promise<ApiResponse<PaginatedResponse<Note>>> => {
+    const response = await api.post('/notes/batch/restore', { ids });
+    return response.data;
+  },
 
-  getVersions: (id: string): Promise<ApiResponse<{ versions: NoteVersion[] }>> =>
-    api.get(`/notes/${id}/versions`),
+  getVersions: async (id: string): Promise<ApiResponse<{ versions: NoteVersion[] }>> => {
+    const response = await api.get(`/notes/${id}/versions`);
+    return response.data;
+  },
 
-  getTrash: (): Promise<ApiResponse<PaginatedResponse<Note>>> =>
-    api.get('/notes/trash'),
+  getTrash: async (): Promise<ApiResponse<PaginatedResponse<Note>>> => {
+    const response = await api.get('/notes/trash');
+    return response.data;
+  },
 
-  search: (query: string, options?: { folderId?: string; tagId?: string }): Promise<ApiResponse<PaginatedResponse<Note>>> =>
-    api.get('/notes/search', { params: { q: query, ...options } }),
+  search: async (query: string, options?: { folderId?: string; tagId?: string }): Promise<ApiResponse<PaginatedResponse<Note>>> => {
+    const response = await api.get('/notes/search', { params: { q: query, ...options } });
+    return response.data;
+  },
 };

@@ -24,7 +24,7 @@ import { EditorSkeleton } from '../components/common/Skeleton';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { noteService } from '../services/note.service';
 import { attachmentService } from '../services/attachment.service';
-import { Attachment, NoteVersion } from '../types/note.types';
+import { Attachment, NoteVersion } from '../types/api.types';
 import type { EditorRef } from '../components/note/RichTextEditor';
 
 const RichTextEditor = lazy(() => import('../components/note/RichTextEditor'));
@@ -32,7 +32,7 @@ const RichTextEditor = lazy(() => import('../components/note/RichTextEditor'));
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { notes, currentNote, fetchNote, prefetchNote, createNote, updateNote, loading } =
+  const { notes, currentNote, fetchNote, createNote, updateNote, loading } =
     useNoteStore();
 
   const [title, setTitle] = useState('');
@@ -70,14 +70,7 @@ function NoteEditor() {
     if (!id || isNewNote) {
       return;
     }
-
-    if (previousNote) {
-      void prefetchNote(previousNote.id);
-    }
-    if (nextNote) {
-      void prefetchNote(nextNote.id);
-    }
-  }, [id, isNewNote, previousNote, nextNote, prefetchNote]);
+  }, [id, isNewNote]);
 
   useEffect(() => {
     if (isNewNote && editorRef.current) {
@@ -180,7 +173,7 @@ function NoteEditor() {
     setVersionsLoading(true);
     try {
       const response = await noteService.getVersions(id);
-      setVersions(response.data.data ?? response.data);
+      setVersions(response.data.versions ?? []);
       setVersionsLoaded(true);
     } finally {
       setVersionsLoading(false);

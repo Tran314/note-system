@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,7 +31,7 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 function Settings() {
   const { t } = useTranslation();
   const { user, setUser } = useAuthStore();
-  const { fontSize, autoSaveEnabled, setFontSize, setAutoSaveEnabled, isDarkMode, setDarkMode } = useSettingsStore();
+  const { autoSaveEnabled, setAutoSaveEnabled, isDarkMode, setDarkMode } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'appearance'>('profile');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -254,7 +254,7 @@ function Settings() {
                 <p className="text-sm text-stone-500">编辑时自动保存笔记，减少手动操作</p>
               </div>
               <button
-                onClick={() => setAutoSaveEnabled((value) => !value)}
+                onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
                 className={`relative h-7 w-14 rounded-full transition ${
                   autoSaveEnabled ? 'bg-stone-800' : 'bg-stone-300'
                 }`}

@@ -16,29 +16,29 @@ describe('useDragAndDrop', () => {
   it('should return drag state and handlers', async () => {
     const { useDragAndDrop } = await import('../hooks/useDragAndDrop');
 
-    const mockCallback = vi.fn();
+    const mockOnReorder = vi.fn();
     const { result } = require('@testing-library/react').renderHook(() =>
-      useDragAndDrop({ onDragStart: mockCallback, onDragEnd: mockCallback })
+      useDragAndDrop(mockOnReorder)
     );
 
     expect(result.current.isDragging).toBe(false);
-    expect(typeof result.current.dragStart).toBe('function');
-    expect(typeof result.current.dragEnd).toBe('function');
-    expect(typeof result.current.dragOver).toBe('function');
-    expect(typeof result.current.drop).toBe('function');
+    expect(typeof result.current.handleDragStart).toBe('function');
+    expect(typeof result.current.handleDragEnd).toBe('function');
+    expect(typeof result.current.handleDragOver).toBe('function');
+    expect(typeof result.current.handleDragCancel).toBe('function');
   });
 
   it('should track dragging state', async () => {
     const { useDragAndDrop } = await import('../hooks/useDragAndDrop');
 
-    const mockCallback = vi.fn();
+    const mockOnReorder = vi.fn();
     const { result } = require('@testing-library/react').renderHook(() =>
-      useDragAndDrop({ onDragStart: mockCallback, onDragEnd: mockCallback })
+      useDragAndDrop(mockOnReorder)
     );
 
-    result.current.dragStart('item-1');
+    result.current.handleDragStart({ id: 'item-1', type: 'folder' });
 
     expect(result.current.isDragging).toBe(true);
-    expect(result.current.draggedId).toBe('item-1');
+    expect(result.current.dragItem?.id).toBe('item-1');
   });
 });

@@ -1,7 +1,5 @@
 import { useEffect, useCallback } from 'react';
 
-type Modifier = 'ctrl' | 'shift' | 'alt' | 'meta';
-
 interface KeyboardShortcut {
   key: string;
   ctrl?: boolean;
@@ -13,7 +11,7 @@ interface KeyboardShortcut {
   priority?: number;
 }
 
-export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[], priority = 0) {
+export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[], _priority = 0) {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       const sorted = [...shortcuts].sort((a, b) => (b.priority || 0) - (a.priority || 0));

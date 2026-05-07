@@ -8,7 +8,7 @@ import { timeAgo, truncate } from '../utils/format';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { NoteCardSkeleton } from '../components/common/Skeleton';
-import { Note } from '../types/note.types';
+import { Note, NoteTag } from '../types/api.types';
 
 const NOTE_LIST_SEARCH_KEY = 'note-list-search';
 const NOTE_LIST_VIEW_MODE_KEY = 'note-list-view-mode';
@@ -18,7 +18,7 @@ const normalizeSearchText = (value: string) => value.toLowerCase().replace(/\s+/
 
 const buildSearchIndex = (note: Note) =>
   normalizeSearchText(
-    [note.title, note.content, note.folder?.name, ...(note.tags?.map((nt) => nt.tag?.name || '') || [])]
+    [note.title, note.content, note.folder?.name, ...(note.tags?.map((nt: NoteTag) => nt.tag?.name || '') || [])]
       .filter(Boolean)
       .join(' '),
   );
@@ -41,7 +41,7 @@ const readStoredViewMode = (): 'list' | 'grid' => {
 
 function NoteList() {
   const navigate = useNavigate();
-  const { notes, loading, fetchNotes, deleteNote, prefetchNote } = useNoteStore();
+  const { notes, loading, fetchNotes, deleteNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { tags, fetchTags } = useTagStore();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -125,8 +125,6 @@ function NoteList() {
     <div
       key={note.id}
       onClick={() => navigate(`/notes/${note.id}`)}
-      onMouseEnter={() => void prefetchNote(note.id)}
-      onFocus={() => void prefetchNote(note.id)}
       className={`note-item group ${className}`}
     >
       {/* 标题行 */}
@@ -162,7 +160,7 @@ function NoteList() {
         {note.tags && note.tags.length > 0 && (
           <div className="flex items-center gap-1">
             <Tag size={12} />
-            {note.tags.slice(0, 3).map((nt) => (
+            {note.tags.slice(0, 3).map((nt: NoteTag) => (
               <button
                 key={nt.tagId}
                 onClick={(e) => { e.stopPropagation(); setSelectedTag(nt.tagId); }}

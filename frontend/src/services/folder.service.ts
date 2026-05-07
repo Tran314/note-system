@@ -2,18 +2,28 @@ import { api } from './api';
 import { Folder, ApiResponse, PaginatedResponse } from '../types/api.types';
 
 export const folderService = {
-  getFolders: (): Promise<ApiResponse<PaginatedResponse<Folder>>> =>
-    api.get('/folders'),
+  getFolders: async (): Promise<ApiResponse<PaginatedResponse<Folder>>> => {
+    const response = await api.get('/folders');
+    return response.data;
+  },
 
-  getFolder: (id: string): Promise<ApiResponse<Folder>> =>
-    api.get(`/folders/${id}`),
+  getFolder: async (id: string): Promise<ApiResponse<Folder>> => {
+    const response = await api.get(`/folders/${id}`);
+    return response.data;
+  },
 
-  createFolder: (data: { name: string; parentId?: string; sortOrder?: number }): Promise<ApiResponse<Folder>> =>
-    api.post('/folders', data),
+  createFolder: async (data: { name: string; parentId?: string; sortOrder?: number }): Promise<ApiResponse<Folder>> => {
+    const response = await api.post('/folders', data);
+    return response.data;
+  },
 
-  updateFolder: (id: string, data: { name?: string; parentId?: string; sortOrder?: number }): Promise<ApiResponse<Folder>> =>
-    api.put(`/folders/${id}`, data),
+  updateFolder: async (id: string, data: { name?: string; parentId?: string; sortOrder?: number }): Promise<ApiResponse<Folder>> => {
+    const response = await api.put(`/folders/${id}`, data);
+    return response.data;
+  },
 
-  deleteFolder: (id: string): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/folders/${id}`),
+  deleteFolder: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await api.delete(`/folders/${id}`);
+    return response.data;
+  },
 };

@@ -25,7 +25,7 @@ interface SidebarDialogsProps {
   onSaveRename: () => void;
   onDeleteConfirm: () => void;
   presetColors: string[];
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | undefined>) => string;
 }
 
 export function SidebarDialogs({

@@ -2,9 +2,10 @@ import { useRef, useCallback, useEffect } from 'react';
 
 type WorkerMessageType = 'parse' | 'serialize' | 'search' | 'count';
 
-interface WorkerMessage {
-  type: WorkerMessageType;
-  data: unknown;
+interface WorkerResponse {
+  type: string;
+  result: unknown;
+  error?: string;
 }
 
 interface WorkerResponse {

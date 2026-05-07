@@ -24,7 +24,7 @@ export const useFolderStore = create<FolderState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await folderService.getFolders();
-      set({ folders: response.data.data, loading: false });
+      set({ folders: response.data.items, loading: false });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '获取文件夹列表失败';
       set({ loading: false, error: message });
@@ -35,7 +35,7 @@ export const useFolderStore = create<FolderState>((set, get) => ({
     set({ error: null });
     try {
       const response = await folderService.createFolder(data);
-      const newFolder = response.data.data;
+      const newFolder = response.data;
       set({ folders: [...get().folders, newFolder] });
       return newFolder;
     } catch (error: unknown) {
@@ -49,7 +49,7 @@ export const useFolderStore = create<FolderState>((set, get) => ({
     set({ error: null });
     try {
       const response = await folderService.updateFolder(id, data);
-      const updatedFolder = response.data.data;
+      const updatedFolder = response.data;
       set({
         folders: get().folders.map((f) => (f.id === id ? updatedFolder : f)),
       });
