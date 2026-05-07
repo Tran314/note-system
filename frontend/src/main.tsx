@@ -5,13 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from './components/common/Toast';
 import { setAuthHandlers } from './services/api';
 import { useAuthStore } from './store/auth.store';
+import { getStoredAccessToken } from './utils/auth-storage';
 import './i18n';
 import App from './App';
 import './index.css';
 import './styles/dark-theme.css';
 
 setAuthHandlers({
-  getToken: () => useAuthStore.getState().accessToken,
+  getToken: () => useAuthStore.getState().accessToken || getStoredAccessToken(),
   refreshToken: async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}/auth/refresh`, {
