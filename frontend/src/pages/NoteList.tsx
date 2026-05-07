@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
 import { useFolderStore } from '../store/folder.store';
 import { useTagStore } from '../store/tag.store';
-<<<<<<< Updated upstream
 import { FileText, Pin, Trash2, Clock, Folder, Tag, Plus, Search, Grid, List } from 'lucide-react';
 import { timeAgo, truncate } from '../utils/format';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
+import { NoteCardSkeleton } from '../components/common/Skeleton';
 import { Note } from '../types/note.types';
 
 const NOTE_LIST_SEARCH_KEY = 'note-list-search';
@@ -15,35 +15,6 @@ const NOTE_LIST_VIEW_MODE_KEY = 'note-list-view-mode';
 const LIST_ROW_HEIGHT = 120;
 
 const normalizeSearchText = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
-=======
-import { FileText, Pin, Trash2, Clock, Folder, Tag, Plus, Search, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
-import { timeAgo, truncate, debounce } from '../utils/format';
-import { Button } from '../components/common/Button';
-import { Input } from '../components/common/Input';
-import { Modal } from '../components/common/Modal';
-import { Note } from '../types/api.types';
-
-const PAGE_SIZE = 20;
-
-function NoteList() {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const { notes, loading, fetchNotes, deleteNote, page, total, setPage } = useNoteStore();
-  const { folders, fetchFolders } = useFolderStore();
-  const { tags, fetchTags } = useTagStore();
-  
-  const [keyword, setKeyword] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchNotes({ keyword, folderId: selectedFolder || undefined, tagId: selectedTag || undefined, limit: PAGE_SIZE });
-    fetchFolders();
-    fetchTags();
-  }, [keyword, selectedFolder, selectedTag, page]);
->>>>>>> Stashed changes
 
 const buildSearchIndex = (note: Note) =>
   normalizeSearchText(
@@ -150,19 +121,7 @@ function NoteList() {
 
   const handleCreateNote = () => navigate('/notes/new');
 
-<<<<<<< Updated upstream
   const renderNoteItem = (note: Note, className = '') => (
-=======
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-    }
-  };
-
-  const renderNoteItem = (note: Note) => (
->>>>>>> Stashed changes
     <div
       key={note.id}
       onClick={() => navigate(`/notes/${note.id}`)}
@@ -266,10 +225,14 @@ function NoteList() {
         )}
       </div>
 
-      {/* 笔记列表 */}
+{/* 笔记列表 */}
       <div ref={scrollContainerRef} onScroll={viewMode === 'list' ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined} className="flex-1 overflow-auto">
         {loading ? (
-          <div className="py-8 text-center text-[#888888]">加载中...</div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <NoteCardSkeleton key={i} />
+            ))}
+          </div>
         ) : displayedNotes.length === 0 ? (
           <div className="py-12 text-center text-[#888888]">
             <FileText size={48} className="mx-auto mb-3 opacity-50" />
@@ -286,7 +249,6 @@ function NoteList() {
             {displayedNotes.map((note) => renderNoteItem(note))}
           </div>
         ) : (
-<<<<<<< Updated upstream
           <div>
             <div style={{ height: `${visibleRange?.topSpacerHeight ?? 0}px` }} />
             {visibleNotes.map((note) => (
@@ -296,39 +258,6 @@ function NoteList() {
             ))}
             <div style={{ height: `${visibleRange?.bottomSpacerHeight ?? 0}px` }} />
           </div>
-=======
-          <>
-            <div className={viewMode === 'grid' ? 'grid grid-cols-2 lg:grid-cols-3 gap-4' : ''}>
-              {notes.map(renderNoteItem)}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page === 1}
-                  className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label={t('common.previousPage')}
-                >
-                  <ChevronLeft size={18} />
-                </button>
-
-                <span className="text-sm text-gray-600">
-                  {t('common.page')} {page} / {totalPages}
-                </span>
-
-                <button
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={page === totalPages}
-                  className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label={t('common.nextPage')}
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            )}
-          </>
->>>>>>> Stashed changes
         )}
       </div>
     </div>
