@@ -1,185 +1,107 @@
 # 贡献指南
 
-感谢你考虑为 Nebula 做贡献！🎉
-
-## 📋 目录
-
-- [行为准则](#行为准则)
-- [如何贡献](#如何贡献)
-- [开发流程](#开发流程)
-- [代码规范](#代码规范)
-- [提交信息](#提交信息)
-- [Pull Request 流程](#pull-request-流程)
+感谢你对 Nebula 项目的关注！欢迎贡献代码、报告问题或提出建议。
 
 ---
 
-## 行为准则
+## 项目概述
 
-请阅读并遵守我们的行为准则，营造友好、包容的社区环境。
+Nebula 是一个**本地优先**的笔记管理系统，使用纯前端架构：
+- **数据存储**: IndexedDB (浏览器本地)
+- **云端同步**: 腾讯云 COS (按需同步)
+- **技术栈**: React 18 + TypeScript + Vite + TailwindCSS
+
+**重要**: 本项目已移除后端服务，所有数据操作在本地完成。
 
 ---
 
 ## 如何贡献
 
-### 报告 Bug
+### 1. 报告问题
 
-如果你发现了 Bug，请通过 [GitHub Issues](https://github.com/your-username/nebula/issues) 提交：
+在提交 Issue 前，请先：
+- 搜索现有 Issues，确认问题未被报告
+- 提供详细的复现步骤
+- 附上浏览器版本和操作系统信息
 
-1. 使用清晰的标题描述问题
-2. 描述复现步骤
-3. 说明预期行为和实际行为
-4. 附上相关日志或截图
+### 2. 提出功能建议
 
-### 提出新功能
+- 描述功能的用途和场景
+- 说明为什么这个功能有价值
+- 如果有设计草图，请附上
 
-欢迎提出新功能建议！请：
+### 3. 提交代码
 
-1. 描述功能需求
-2. 说明使用场景
-3. 讨论实现方案
-
----
-
-## 开发流程
-
-### 1. Fork 并克隆仓库
+#### 开发环境设置
 
 ```bash
-git clone https://github.com/your-username/nebula.git
-cd nebula
-```
+# 克隆仓库
+git clone https://github.com/Tran314/note-system.git
+cd note-system
 
-### 2. 安装依赖
+# 安装依赖
+cd frontend
+npm install
 
-```bash
-npm run install:all
-```
-
-### 3. 配置环境变量
-
-```bash
-cp .env.example .env
-# 编辑 .env 文件
-```
-
-### 4. 初始化数据库
-
-```bash
-cd backend
-npx prisma migrate dev
-npx prisma db seed
-cd ..
-```
-
-### 5. 启动开发服务器
-
-```bash
+# 启动开发服务器
 npm run dev
 ```
 
----
+#### 代码规范
 
-## 代码规范
+- 使用 TypeScript 编写代码
+- 遵循 ESLint 规则
+- 使用 Prettier 格式化代码
+- 提交前运行 `npm run lint`
 
-### TypeScript
-
-- 使用 TypeScript 编写所有代码
-- 启用严格模式 (`strict: true`)
-- 为所有函数添加类型注解
-
-### 后端 (NestJS)
-
-- 遵循 NestJS 官方风格指南
-- 使用 DTO 进行数据验证
-- 使用 Guards 和 Interceptors
-
-### 前端 (React)
-
-- 使用函数组件和 Hooks
-- 使用 TailwindCSS 进行样式
-- 遵循 React 最佳实践
-
-### 命名规范
-
-| 类型 | 规范 | 示例 |
-|------|------|------|
-| 文件 | kebab-case | `note-editor.tsx` |
-| 组件 | PascalCase | `NoteEditor` |
-| 函数 | camelCase | `fetchNotes` |
-| 常量 | UPPER_SNAKE_CASE | `MAX_NOTES` |
-| 类型/接口 | PascalCase | `NoteData` |
-
----
-
-## 提交信息
-
-使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
+#### 提交信息格式
 
 ```
-<type>(<scope>): <subject>
+<type>: <description>
 
-<body>
+[optional body]
 
-<footer>
+[optional footer]
 ```
 
-### 类型 (type)
-
+**类型**:
 - `feat`: 新功能
-- `fix`: 修复 Bug
+- `fix`: 修复 bug
 - `docs`: 文档更新
-- `style`: 代码格式（不影响功能）
+- `style`: 代码格式调整
 - `refactor`: 重构
-- `perf`: 性能优化
 - `test`: 测试相关
-- `chore`: 构建/工具相关
+- `chore`: 构建/工具链相关
 
-### 示例
-
+**示例**:
 ```
-feat(editor): 添加代码块语法高亮
+feat: add folder drag and drop support
 
-- 支持 JavaScript, TypeScript, Python
-- 使用 Prism.js 高亮
-- 添加语言选择器
+fix: resolve note content not saving issue
 
-Closes #123
+docs: update README with new architecture
 ```
 
 ---
 
-## Pull Request 流程
+## 项目结构
 
-### 1. 创建分支
-
-```bash
-git checkout -b feature/your-feature
 ```
-
-### 2. 提交更改
-
-```bash
-git add .
-git commit -m "feat: your feature"
+frontend/
+├── src/
+│   ├── components/       # UI 组件
+│   │   ├── common/       # 通用组件
+│   │   ├── layout/       # 布局组件
+│   │   └── note/         # 笔记组件
+│   ├── pages/            # 页面组件
+│   ├── store/            # Zustand 状态管理
+│   ├── services/         # 服务层
+│   │   ├── local-db.service.ts   # IndexedDB 操作
+│   │   ├── sync.service.ts       # COS 同步
+│   │   └── ...
+│   ├── hooks/            # 自定义 Hooks
+│   └── utils/            # 工具函数
 ```
-
-### 3. 推送到 Fork
-
-```bash
-git push origin feature/your-feature
-```
-
-### 4. 创建 Pull Request
-
-- 填写 PR 模板
-- 关联相关 Issue
-- 等待代码审查
-
-### 5. 代码审查
-
-- 响应审查意见
-- 进行必要的修改
-- 保持讨论友好
 
 ---
 
@@ -188,29 +110,46 @@ git push origin feature/your-feature
 ### 运行测试
 
 ```bash
-# 所有测试
+# 单元测试
 npm test
-
-# 后端测试
-npm run test:backend
-
-# 前端测试
-npm run test:frontend
 
 # E2E 测试
 npm run test:e2e
+
+# 测试覆盖率
+npm run test:coverage
 ```
 
-### 测试覆盖率
+### 编写测试
 
-我们期望代码覆盖率达到 80% 以上。
+- 为新功能编写单元测试
+- 确保测试覆盖核心逻辑
+- E2E 测试覆盖关键用户流程
+
+---
+
+## 发布流程
+
+1. 更新 `CHANGELOG.md`
+2. 更新 `package.json` 版本号
+3. 创建 Git Tag
+4. 推送到远程仓库
+
+---
+
+## 行为准则
+
+- 尊重其他贡献者
+- 建设性地讨论问题
+- 接受建设性批评
+- 关注项目最佳利益
 
 ---
 
 ## 许可证
 
-提交代码即表示你同意将代码以 MIT 许可证开源。
+本项目采用 MIT 许可证。提交代码即表示你同意将代码以 MIT 许可证发布。
 
 ---
 
-感谢你的贡献！🌟
+**感谢你的贡献！** 🎉
