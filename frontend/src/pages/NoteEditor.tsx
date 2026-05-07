@@ -1,17 +1,7 @@
-<<<<<<< Updated upstream
 import { useEffect, useMemo, useRef, useState } from 'react';
-=======
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
->>>>>>> Stashed changes
+import { lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNoteStore } from '../store/note.store';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import CodeBlock from '@tiptap/extension-code-block';
-<<<<<<< Updated upstream
 import {
   Bold,
   Italic,
@@ -30,18 +20,14 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
+import { EditorSkeleton } from '../components/common/Skeleton';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { noteService } from '../services/note.service';
 import { attachmentService } from '../services/attachment.service';
 import { Attachment, NoteVersion } from '../types/note.types';
-=======
-import { EditorHeader } from '../components/note/EditorHeader';
-import { EditorToolbar } from '../components/note/EditorToolbar';
-import { EditorDialogs } from '../components/note/EditorDialogs';
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useAutoSave } from '../hooks/useAutoSave';
-import { sanitizeHtml } from '../utils/sanitize';
->>>>>>> Stashed changes
+import type { EditorRef } from '../components/note/RichTextEditor';
+
+const RichTextEditor = lazy(() => import('../components/note/RichTextEditor'));
 
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
@@ -66,51 +52,13 @@ function NoteEditor() {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedTitleRef = useRef('');
   const lastSavedContentRef = useRef('');
+  const editorRef = useRef<EditorRef>(null);
 
   const isNewNote = id === 'new';
-<<<<<<< Updated upstream
 
   const currentIndex = useMemo(() => notes.findIndex((note) => note.id === id), [notes, id]);
   const previousNote = currentIndex > 0 ? notes[currentIndex - 1] : null;
   const nextNote = currentIndex >= 0 && currentIndex < notes.length - 1 ? notes[currentIndex + 1] : null;
-=======
-  const noteIdRef = useRef(id);
->>>>>>> Stashed changes
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Placeholder.configure({
-        placeholder: '开始编写...',
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline',
-        },
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg',
-        },
-      }),
-      CodeBlock.configure({
-        HTMLAttributes: {
-          class: 'bg-gray-100 p-4 rounded-lg font-mono text-sm',
-        },
-      }),
-    ],
-    content: '',
-    onUpdate: () => {
-      setHasUnsavedChanges(true);
-<<<<<<< Updated upstream
-      scheduleAutoSave();
-=======
->>>>>>> Stashed changes
-    },
-  });
 
   useEffect(() => {
     if (!isNewNote && id) {
@@ -132,9 +80,9 @@ function NoteEditor() {
   }, [id, isNewNote, previousNote, nextNote, prefetchNote]);
 
   useEffect(() => {
-    if (isNewNote && editor) {
+    if (isNewNote && editorRef.current) {
       setTitle('');
-      editor.commands.setContent('');
+      editorRef.current.setContent('');
       lastSavedTitleRef.current = '';
       lastSavedContentRef.current = '';
       setLastSaved(null);
@@ -146,15 +94,11 @@ function NoteEditor() {
       return;
     }
 
-    if (currentNote && editor) {
+    if (currentNote && editorRef.current) {
       setTitle(currentNote.title);
-<<<<<<< Updated upstream
-      editor.commands.setContent(currentNote.content || '');
+      editorRef.current.setContent(currentNote.content || '');
       lastSavedTitleRef.current = currentNote.title;
       lastSavedContentRef.current = currentNote.content || '';
-=======
-      editor.commands.setContent(sanitizeHtml(currentNote.content || ''));
->>>>>>> Stashed changes
       setLastSaved(new Date(currentNote.updatedAt));
       setHasUnsavedChanges(false);
       setVersions([]);
@@ -162,7 +106,7 @@ function NoteEditor() {
       setVersionsLoaded(false);
       setAttachmentsLoaded(false);
     }
-  }, [currentNote, editor, isNewNote]);
+  }, [currentNote, isNewNote]);
 
   useEffect(() => {
     return () => {
@@ -172,14 +116,10 @@ function NoteEditor() {
     };
   }, []);
 
-<<<<<<< Updated upstream
   const handleSave = async (isAutoSave = false) => {
-    const content = editor?.getHTML() || '';
+    const content = editorRef.current?.getEditor()?.getHTML() || '';
 
-=======
-  const handleSave = useCallback(async (isAutoSave = false) => {
->>>>>>> Stashed changes
-    if (!title.trim() && !editor?.getText().trim()) {
+    if (!title.trim() && !editorRef.current?.getEditor()?.getText().trim()) {
       if (!isAutoSave) {
         alert('请输入标题或内容');
       }
@@ -190,11 +130,6 @@ function NoteEditor() {
       setSaving(true);
     }
 
-<<<<<<< Updated upstream
-=======
-    const content = sanitizeHtml(editor?.getHTML() || '');
-
->>>>>>> Stashed changes
     try {
       if (isNewNote) {
         const newNote = await createNote({ title, content });
@@ -235,22 +170,7 @@ function NoteEditor() {
         setSaving(false);
       }
     }
-  }, [title, editor, isNewNote, id, createNote, updateNote, navigate, t]);
-
-  const autoSaveHandler = useMemo(
-    () => async () => {
-      if (title.trim() || editor?.getText().trim()) {
-        await handleSave(true);
-      }
-    },
-    [title, editor, handleSave]
-  );
-
-  useAutoSave({
-    enabled: hasUnsavedChanges && !isNewNote,
-    delay: 2000,
-    onSave: autoSaveHandler,
-  });
+  };
 
   const loadVersions = async () => {
     if (!id || isNewNote || versionsLoaded || versionsLoading) {
@@ -288,7 +208,7 @@ function NoteEditor() {
     }
 
     autoSaveTimerRef.current = setTimeout(() => {
-      if (title.trim() || editor?.getText().trim()) {
+      if (title.trim() || editorRef.current?.getEditor()?.getText().trim()) {
         void handleSave(true);
       }
     }, 2000);
@@ -304,13 +224,13 @@ function NoteEditor() {
     {
       key: 'b',
       ctrl: true,
-      action: () => editor?.chain().focus().toggleBold().run(),
+      action: () => editorRef.current?.getEditor()?.chain().focus().toggleBold().run(),
       description: '加粗',
     },
     {
       key: 'i',
       ctrl: true,
-      action: () => editor?.chain().focus().toggleItalic().run(),
+      action: () => editorRef.current?.getEditor()?.chain().focus().toggleItalic().run(),
       description: '斜体',
     },
     {
@@ -341,23 +261,20 @@ function NoteEditor() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-<<<<<<< Updated upstream
   const toolbarItems = [
-    { icon: Bold, action: () => editor?.chain().focus().toggleBold().run(), title: '加粗', active: editor?.isActive('bold') },
-    { icon: Italic, action: () => editor?.chain().focus().toggleItalic().run(), title: '斜体', active: editor?.isActive('italic') },
-    { icon: Code, action: () => editor?.chain().focus().toggleCode().run(), title: '代码', active: editor?.isActive('code') },
-    { icon: Quote, action: () => editor?.chain().focus().toggleBlockquote().run(), title: '引用', active: editor?.isActive('blockquote') },
-    { icon: List, action: () => editor?.chain().focus().toggleBulletList().run(), title: '无序列表', active: editor?.isActive('bulletList') },
-    { icon: ListOrdered, action: () => editor?.chain().focus().toggleOrderedList().run(), title: '有序列表', active: editor?.isActive('orderedList') },
-    { icon: LinkIcon, action: () => setShowLinkDialog(true), title: '链接', active: editor?.isActive('link') },
+    { icon: Bold, action: () => editorRef.current?.getEditor()?.chain().focus().toggleBold().run(), title: '加粗', active: editorRef.current?.getEditor()?.isActive('bold') },
+    { icon: Italic, action: () => editorRef.current?.getEditor()?.chain().focus().toggleItalic().run(), title: '斜体', active: editorRef.current?.getEditor()?.isActive('italic') },
+    { icon: Code, action: () => editorRef.current?.getEditor()?.chain().focus().toggleCode().run(), title: '代码', active: editorRef.current?.getEditor()?.isActive('code') },
+    { icon: Quote, action: () => editorRef.current?.getEditor()?.chain().focus().toggleBlockquote().run(), title: '引用', active: editorRef.current?.getEditor()?.isActive('blockquote') },
+    { icon: List, action: () => editorRef.current?.getEditor()?.chain().focus().toggleBulletList().run(), title: '无序列表', active: editorRef.current?.getEditor()?.isActive('bulletList') },
+    { icon: ListOrdered, action: () => editorRef.current?.getEditor()?.chain().focus().toggleOrderedList().run(), title: '有序列表', active: editorRef.current?.getEditor()?.isActive('orderedList') },
+    { icon: LinkIcon, action: () => setShowLinkDialog(true), title: '链接', active: editorRef.current?.getEditor()?.isActive('link') },
     { icon: ImageIcon, action: () => setShowImageDialog(true), title: '图片', active: false },
   ];
 
-=======
->>>>>>> Stashed changes
   const handleAddLink = () => {
     if (linkUrl) {
-      editor?.chain().focus().setLink({ href: linkUrl }).run();
+      editorRef.current?.getEditor()?.chain().focus().setLink({ href: linkUrl }).run();
     }
     setShowLinkDialog(false);
     setLinkUrl('');
@@ -365,7 +282,7 @@ function NoteEditor() {
 
   const handleAddImage = () => {
     if (imageUrl) {
-      editor?.chain().focus().setImage({ src: imageUrl }).run();
+      editorRef.current?.getEditor()?.chain().focus().setImage({ src: imageUrl }).run();
     }
     setShowImageDialog(false);
     setImageUrl('');
@@ -383,12 +300,12 @@ function NoteEditor() {
           const file = item.getAsFile();
           if (file) {
             if (file.size > MAX_IMAGE_SIZE) {
-              alert(t('settings.imageTooLarge', { size: '5MB' }));
+              alert('图片大小不能超过 5MB');
               return;
             }
             const reader = new FileReader();
             reader.onload = () => {
-              editor?.chain().focus().setImage({ src: reader.result as string }).run();
+              editorRef.current?.getEditor()?.chain().focus().setImage({ src: reader.result as string }).run();
             };
             reader.readAsDataURL(file);
           }
@@ -398,14 +315,13 @@ function NoteEditor() {
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [editor, t]);
+  }, []);
 
   if (loading && !isNewNote) {
     return <div className="flex h-full items-center justify-center">加载中...</div>;
   }
 
   return (
-<<<<<<< Updated upstream
     <div className="page-enter flex h-full gap-4 rounded-[24px] border border-stone-200/70 bg-white/45 p-1 backdrop-blur-md">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200/70 bg-white/70 p-3 backdrop-blur-md">
@@ -488,23 +404,18 @@ function NoteEditor() {
         </div>
 
         <div className="flex-1 overflow-auto">
-          <EditorContent
-            editor={editor}
-            className="prose prose-sm min-h-[400px] max-w-none p-4"
-          />
+          <Suspense fallback={<EditorSkeleton />}>
+            <RichTextEditor
+              ref={editorRef}
+              content={currentNote?.content || ''}
+              onUpdate={() => {
+                setHasUnsavedChanges(true);
+                scheduleAutoSave();
+              }}
+            />
+          </Suspense>
         </div>
       </div>
-=======
-    <div className="h-full flex flex-col bg-white">
-      <EditorHeader
-        hasUnsavedChanges={hasUnsavedChanges}
-        lastSaved={lastSaved}
-        saving={saving}
-        onSave={() => handleSave(false)}
-        onBack={() => navigate(-1)}
-        t={t}
-      />
->>>>>>> Stashed changes
 
       {!isNewNote && id && (
         <aside className="w-80 shrink-0 rounded-r-[22px] border-l border-stone-200/70 bg-stone-50/70 p-4">
@@ -576,7 +487,6 @@ function NoteEditor() {
         </aside>
       )}
 
-<<<<<<< Updated upstream
       {showLinkDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-96 rounded-lg bg-white p-4">
@@ -621,48 +531,6 @@ function NoteEditor() {
           </div>
         </div>
       )}
-=======
-      <div className="p-4 border-b border-gray-200">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setHasUnsavedChanges(true);
-          }}
-          placeholder={t('common.titlePlaceholder')}
-          className="w-full text-2xl font-bold outline-none"
-        />
-      </div>
-
-      <EditorToolbar
-        editor={editor}
-        onLinkClick={() => setShowLinkDialog(true)}
-        onImageClick={() => setShowImageDialog(true)}
-        t={t}
-      />
-
-      <div className="flex-1 overflow-auto">
-        <EditorContent
-          editor={editor}
-          className="prose prose-sm max-w-none p-4 min-h-[400px]"
-        />
-      </div>
-
-      <EditorDialogs
-        showLinkDialog={showLinkDialog}
-        showImageDialog={showImageDialog}
-        linkUrl={linkUrl}
-        imageUrl={imageUrl}
-        onLinkUrlChange={setLinkUrl}
-        onImageUrlChange={setImageUrl}
-        onCloseLinkDialog={() => setShowLinkDialog(false)}
-        onCloseImageDialog={() => setShowImageDialog(false)}
-        onAddLink={handleAddLink}
-        onAddImage={handleAddImage}
-        t={t}
-      />
->>>>>>> Stashed changes
     </div>
   );
 }
