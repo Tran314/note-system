@@ -1,5 +1,4 @@
-import { cosService } from './cos.service';
-import { cacheService } from './cache.service';
+import { localDb } from './local-db.service';
 import { generateUUID } from '../utils/uuid';
 
 export interface Tag {
@@ -14,63 +13,35 @@ const userId = import.meta.env.VITE_DEFAULT_USER_ID || 'test-user-001';
 
 export class TagService {
   async fetchTags(): Promise<Tag[]> {
-    const index = await cacheService.getWithCache(
-      () => cosService.getJSON(`users/${userId}/tags/index.json`),
-      `tags-index-${userId}`,
-      60000
-    );
-    return index.tags || [];
+    return await localDb.tags.where('userId').equals(userId).toArray();
   }
 
   async createTag(data: { name: string; color?: string }): Promise<Tag> {
     const tagId = generateUUID();
-    const tag: Tag = {
+    const tag = {
       id: tagId,
       userId,
       name: data.name,
       color: data.color || '#6B7280',
       createdAt: new Date().toISOString(),
+      syncedAt: null,
     };
 
-    await this.updateTagInIndex(tag, 'add');
+    await localDb.tags.add(tag);
     return tag;
   }
 
   async updateTag(tagId: string, data: { name?: string; color?: string }): Promise<Tag> {
-    const tag = await cosService.getJSON(`users/${userId}/tags/${tagId}.json`);
-    const updatedTag = { ...tag, ...data };
+    const tag = await localDb.tags.get(tagId);
+    if (!tag) throw new Error('Tag not found');
 
-    await cosService.putJSON(`users/${userId}/tags/${tagId}.json`, updatedTag);
-    await this.updateTagInIndex(updatedTag, 'update');
-
+    const updatedTag = { ...tag, ...data, syncedAt: null };
+    await localDb.tags.update(tagId, updatedTag);
     return updatedTag;
   }
 
   async deleteTag(tagId: string): Promise<void> {
-    await cosService.deleteJSON(`users/${userId}/tags/${tagId}.json`);
-    await this.updateTagInIndex({ id: tagId }, 'remove');
-  }
-
-  private async updateTagInIndex(
-    tag: Partial<Tag>,
-    action: 'add' | 'update' | 'remove'
-  ): Promise<void> {
-    const index = await cosService.getJSON(`users/${userId}/tags/index.json`);
-    let tags = index.tags || [];
-
-    if (action === 'add') {
-      tags.push(tag as Tag);
-    } else if (action === 'update') {
-      tags = tags.map((t: Tag) => (t.id === tag.id ? { ...t, ...tag } : t));
-    } else {
-      tags = tags.filter((t: Tag) => t.id !== tag.id);
-    }
-
-    await cosService.putJSON(`users/${userId}/tags/index.json`, {
-      userId,
-      tags,
-    });
-    cacheService.invalidate(`tags-index-${userId}`);
+    await localDb.tags.delete(tagId);
   }
 }
 

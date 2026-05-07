@@ -1,5 +1,4 @@
-import { cosService } from './cos.service';
-import { cacheService } from './cache.service';
+import { localDb, LocalNote } from './local-db.service';
 import { generateUUID } from '../utils/uuid';
 
 export interface Note {
@@ -43,23 +42,31 @@ const userId = import.meta.env.VITE_DEFAULT_USER_ID || 'test-user-001';
 
 export class NoteService {
   async fetchNotes(): Promise<NoteSummary[]> {
-    const index = await cacheService.getWithCache(
-      () => cosService.getJSON(`users/${userId}/notes/index.json`),
-      `notes-index-${userId}`,
-      30000
-    );
-    return index.notes || [];
+    const notes = await localDb.notes
+      .where({ userId, isDeleted: false })
+      .sortBy('updatedAt');
+
+    return notes.reverse().map(n => ({
+      id: n.id,
+      title: n.title,
+      updatedAt: n.updatedAt,
+      isPinned: n.isPinned,
+      folderId: n.folderId,
+      tags: n.tags,
+    }));
   }
 
   async fetchNote(noteId: string): Promise<Note> {
-    return await cosService.getJSON(`users/${userId}/notes/${noteId}.json`);
+    const note = await localDb.notes.get(noteId);
+    if (!note) throw new Error('Note not found');
+    return note;
   }
 
   async createNote(data: CreateNoteData): Promise<Note> {
     const noteId = generateUUID();
     const now = new Date().toISOString();
-    
-    const note: Note = {
+
+    const note: LocalNote = {
       id: noteId,
       userId,
       folderId: data.folderId || null,
@@ -72,73 +79,39 @@ export class NoteService {
       createdAt: now,
       updatedAt: now,
       tags: [],
+      syncedAt: null,
     };
 
-    await cosService.putJSON(`users/${userId}/notes/${noteId}.json`, note);
-    await this.updateIndex();
-
+    await localDb.notes.add(note);
     return note;
   }
 
   async updateNote(noteId: string, data: UpdateNoteData): Promise<Note> {
-    const note = await this.fetchNote(noteId);
+    const note = await localDb.notes.get(noteId);
+    if (!note) throw new Error('Note not found');
+
     const updatedNote = {
       ...note,
       ...data,
       updatedAt: new Date().toISOString(),
       version: note.version + 1,
+      syncedAt: null,
     };
 
-    await cosService.putJSON(`users/${userId}/notes/${noteId}.json`, updatedNote);
-    await this.updateIndex();
-
+    await localDb.notes.update(noteId, updatedNote);
     return updatedNote;
   }
 
   async deleteNote(noteId: string): Promise<void> {
-    const note = await this.fetchNote(noteId);
-    const deletedNote = {
-      ...note,
+    const note = await localDb.notes.get(noteId);
+    if (!note) throw new Error('Note not found');
+
+    await localDb.notes.update(noteId, {
       isDeleted: true,
       deletedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
-
-    await cosService.putJSON(`users/${userId}/notes/${noteId}.json`, deletedNote);
-    await this.updateIndex();
-  }
-
-  private async updateIndex(): Promise<void> {
-    const allNotes = await this.listAllNotes();
-    const activeNotes = allNotes.filter((n) => !n.isDeleted);
-    
-    const index = {
-      userId,
-      notes: activeNotes
-        .map((n) => ({
-          id: n.id,
-          title: n.title,
-          updatedAt: n.updatedAt,
-          isPinned: n.isPinned,
-          folderId: n.folderId,
-          tags: n.tags,
-        }))
-        .sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        ),
-    };
-
-    await cosService.putJSON(`users/${userId}/notes/index.json`, index);
-    cacheService.invalidate(`notes-index-${userId}`);
-  }
-
-  private async listAllNotes(): Promise<Note[]> {
-    const index = await cosService.getJSON(`users/${userId}/notes/index.json`);
-    const notes = await Promise.all(
-      (index.notes || []).map((n: NoteSummary) => this.fetchNote(n.id))
-    );
-    return notes;
+      syncedAt: null,
+    });
   }
 }
 

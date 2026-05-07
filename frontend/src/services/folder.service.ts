@@ -1,5 +1,4 @@
-import { cosService } from './cos.service';
-import { cacheService } from './cache.service';
+import { localDb } from './local-db.service';
 import { generateUUID } from '../utils/uuid';
 
 export interface Folder {
@@ -23,19 +22,15 @@ const userId = import.meta.env.VITE_DEFAULT_USER_ID || 'test-user-001';
 
 export class FolderService {
   async fetchFolders(): Promise<FolderTree[]> {
-    const tree = await cacheService.getWithCache(
-      () => cosService.getJSON(`users/${userId}/folders/tree.json`),
-      `folders-tree-${userId}`,
-      60000
-    );
-    return tree.tree || [];
+    const folders = await localDb.folders.where('userId').equals(userId).toArray();
+    return this.buildTree(folders);
   }
 
   async createFolder(data: { name: string; parentId?: string | null }): Promise<Folder> {
     const folderId = generateUUID();
     const now = new Date().toISOString();
 
-    const folder: Folder = {
+    const folder = {
       id: folderId,
       userId,
       name: data.name,
@@ -43,56 +38,33 @@ export class FolderService {
       sortOrder: 0,
       createdAt: now,
       updatedAt: now,
+      syncedAt: null,
     };
 
-    await cosService.putJSON(`users/${userId}/folders/${folderId}.json`, folder);
-    await this.updateTree();
-
+    await localDb.folders.add(folder);
     return folder;
   }
 
   async updateFolder(folderId: string, data: { name?: string }): Promise<Folder> {
-    const folder = await cosService.getJSON(`users/${userId}/folders/${folderId}.json`);
+    const folder = await localDb.folders.get(folderId);
+    if (!folder) throw new Error('Folder not found');
+
     const updatedFolder = {
       ...folder,
       ...data,
       updatedAt: new Date().toISOString(),
+      syncedAt: null,
     };
 
-    await cosService.putJSON(`users/${userId}/folders/${folderId}.json`, updatedFolder);
-    await this.updateTree();
-
+    await localDb.folders.update(folderId, updatedFolder);
     return updatedFolder;
   }
 
   async deleteFolder(folderId: string): Promise<void> {
-    await cosService.deleteJSON(`users/${userId}/folders/${folderId}.json`);
-    await this.updateTree();
+    await localDb.folders.delete(folderId);
   }
 
-  private async updateTree(): Promise<void> {
-    const allFolders = await this.listAllFolders();
-    const tree = this.buildTree(allFolders);
-
-    await cosService.putJSON(`users/${userId}/folders/tree.json`, {
-      userId,
-      tree,
-    });
-    cacheService.invalidate(`folders-tree-${userId}`);
-  }
-
-  private async listAllFolders(): Promise<Folder[]> {
-    const keys = await cosService.listObjects(`users/${userId}/folders/`);
-    const folderKeys = keys.filter(
-      (k) => k.endsWith('.json') && !k.includes('tree.json')
-    );
-    const folders = await Promise.all(
-      folderKeys.map((k) => cosService.getJSON(k))
-    );
-    return folders;
-  }
-
-  private buildTree(folders: Folder[]): FolderTree[] {
+  private buildTree(folders: any[]): FolderTree[] {
     const folderMap = new Map<string, FolderTree>();
     const roots: FolderTree[] = [];
 
