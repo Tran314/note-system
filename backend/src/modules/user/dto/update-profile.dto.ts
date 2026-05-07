@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsUrl } from 'class-validator';
+import { IsString, IsOptional, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateProfileDto {
@@ -10,7 +10,7 @@ export class UpdateProfileDto {
 
   @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg', description: '头像 URL' })
   @IsOptional()
-  @IsUrl({}, { message: '头像必须是有效的 URL 格式' })
+  @IsString()
   @MaxLength(500, { message: '头像 URL 最多500位' })
   avatarUrl?: string;
 }

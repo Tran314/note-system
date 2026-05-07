@@ -14,10 +14,6 @@ on:
           - production
           - staging
 
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build-backend:
     name: Build Backend Docker Image
@@ -36,7 +32,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Build and push backend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
@@ -63,7 +59,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Build and push frontend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
@@ -91,23 +87,14 @@ jobs:
             cd /opt/note-system
             
             # Pull latest images
-            docker compose pull
-            
-            # Run database migrations
-            docker compose run --rm backend npx prisma migrate deploy
+            docker-compose pull
             
             # Restart services
-            docker compose up -d
+            docker-compose up -d
             
-            # Health check with retry
-            for i in $(seq 1 12); do
-              if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
-                echo "Backend is healthy"
-                break
-              fi
-              echo "Waiting... ($i/12)"
-              sleep 5
-            done
+            # Health check
+            sleep 10
+            curl -f http://localhost:3001/health || exit 1
             
             # Cleanup old images
             docker image prune -f
@@ -120,9 +107,10 @@ jobs:
     
     steps:
       - name: Send notification
-        uses: 8398a7/action-slack@v4
+        uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
           fields: repo,message,commit,author,action,eventName,ref,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: env.SLACK_WEBHOOK_URL != ''

@@ -34,63 +34,43 @@ git fetch origin
 git checkout main
 git pull origin main
 
-# Run database migrations
-echo "📊 Running database migrations..."
-docker compose run --rm backend npx prisma migrate deploy
-
 # Pull latest Docker images
 echo "🐳 Pulling Docker images..."
-docker compose pull
+docker-compose pull
 
 # Stop existing containers
 echo "🛑 Stopping existing containers..."
-docker compose down --remove-orphans
+docker-compose down --remove-orphans
 
 # Start new containers
 echo "🟢 Starting new containers..."
-docker compose up -d
+docker-compose up -d
 
-# Wait for health check with retry
+# Wait for health check
 echo "⏳ Waiting for services to be healthy..."
-MAX_RETRIES=12
-RETRY_COUNT=0
+sleep 10
 
+# Check backend health
 echo "🔍 Checking backend health..."
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
-        echo "✅ Backend is healthy"
-        break
-    fi
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    echo "   Backend retry $RETRY_COUNT/$MAX_RETRIES..."
-    sleep 5
-done
-
-if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+    echo "✅ Backend is healthy"
+else
     echo "❌ Backend health check failed"
-    docker compose logs backend
+    docker-compose logs backend
     exit 1
 fi
 
-RETRY_COUNT=0
+# Check frontend health
 echo "🔍 Checking frontend health..."
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -sf http://localhost:3000 > /dev/null 2>&1; then
-        echo "✅ Frontend is healthy"
-        break
-    fi
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    echo "   Frontend retry $RETRY_COUNT/$MAX_RETRIES..."
-    sleep 5
-done
-
-if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+if curl -f http://localhost:3000 > /dev/null 2>&1; then
+    echo "✅ Frontend is healthy"
+else
     echo "❌ Frontend health check failed"
-    docker compose logs frontend
+    docker-compose logs frontend
     exit 1
 fi
 
-# Cleanup old backups (older than 7 days)
+# Cleanup old backups (keep last 7)
 echo "🧹 Cleaning up old backups..."
 find "$BACKUP_DIR" -name "backup-*.tar.gz" -mtime +7 -delete
 
@@ -107,6 +87,6 @@ echo "   PostgreSQL: localhost:5432"
 echo "   Redis: localhost:6379"
 echo ""
 echo "📋 Useful commands:"
-echo "   View logs: docker compose logs -f"
-echo "   Restart: docker compose restart"
-echo "   Stop: docker compose down"
+echo "   View logs: docker-compose logs -f"
+echo "   Restart: docker-compose restart"
+echo "   Stop: docker-compose down"

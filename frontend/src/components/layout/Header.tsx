@@ -1,16 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
-import { useTranslation } from 'react-i18next';
-import { Search, Bell, Settings, LogOut, User, Moon, Sun } from 'lucide-react';
+import { Search, Bell, Settings, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 
 function Header() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
 
   const handleLogout = () => {
     logout();
@@ -25,86 +22,57 @@ function Header() {
     }
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
-  };
-
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
+    <header className="flex h-14 items-center justify-between border-b border-[#3a3a3a] bg-[#242424] px-4">
+      {/* 搜索框 */}
       <form onSubmit={handleSearch} className="flex-1 max-w-md">
         <div className="relative">
-          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
           <input
             type="text"
-            placeholder={t('common.searchPlaceholder')}
+            placeholder="搜索笔记..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg 
-              focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
-              text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+            className="input-field pl-10"
           />
         </div>
       </form>
 
-      <div className="flex items-center gap-4">
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          title={isDarkMode ? t('common.toggleLight') : t('common.toggleDark')}
-        >
-          {isDarkMode ? <Sun size={20} className="text-gray-600 dark:text-gray-300" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
+      {/* 右侧操作区 */}
+      <div className="flex items-center gap-2">
+        {/* 通知按钮 */}
+        <button className="btn-ghost rounded-lg p-2" title="通知">
+          <Bell size={18} />
         </button>
 
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" title={t('common.notifications')}>
-          <Bell size={20} className="text-gray-600 dark:text-gray-300" />
+        {/* 设置按钮 */}
+        <button onClick={() => navigate('/settings')} className="btn-ghost rounded-lg p-2" title="设置">
+          <Settings size={18} />
         </button>
 
-        <button
-          onClick={() => navigate('/settings')}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          title={t('common.settings')}
-        >
-          <Settings size={20} className="text-gray-600 dark:text-gray-300" />
-        </button>
-
+        {/* 用户菜单 */}
         <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
-              <User size={16} className="text-white" />
+          <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[#363636]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#10a37f]">
+              <User size={14} className="text-white" />
             </div>
-            <span className="text-sm text-gray-700 dark:text-gray-200 hidden md:inline">
-              {user?.nickname || user?.email || t('common.user')}
+            <span className="hidden text-sm text-[#b4b4b4] md:inline">
+              {user?.nickname || user?.email?.split('@')[0] || '用户'}
             </span>
           </button>
 
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[180px]">
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    navigate('/settings');
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-200"
-                >
-                  <Settings size={16} />
-                  {t('common.settings')}
+              <div className="absolute right-0 top-full z-50 mt-2 min-w-[160px] rounded-lg border border-[#3a3a3a] bg-[#242424] py-1 shadow-lg">
+                <button onClick={() => { setShowUserMenu(false); navigate('/settings'); }} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-[#363636]">
+                  <Settings size={14} />
+                  设置
                 </button>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    handleLogout();
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2"
-                >
-                  <LogOut size={16} />
-                  {t('common.logout')}
+                <div className="my-1 border-t border-[#3a3a3a]" />
+                <button onClick={() => { setShowUserMenu(false); handleLogout(); }} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#ef4444] hover:bg-[#ef4444]/10">
+                  <LogOut size={14} />
+                  退出登录
                 </button>
               </div>
             </>

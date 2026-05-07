@@ -3,6 +3,7 @@ import { AttachmentService } from './attachment.service';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
+import { NotFoundException } from '@nestjs/common';
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -14,8 +15,6 @@ jest.mock('fs', () => ({
 
 describe('AttachmentService', () => {
   let service: AttachmentService;
-  let prisma: PrismaService;
-  let configService: ConfigService;
 
   const mockPrisma = {
     attachment: {
@@ -51,16 +50,10 @@ describe('AttachmentService', () => {
     }).compile();
 
     service = module.get<AttachmentService>(AttachmentService);
-    prisma = module.get<PrismaService>(PrismaService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
   });
 
   describe('upload', () => {
@@ -96,23 +89,25 @@ describe('AttachmentService', () => {
       expect(result).toEqual(mockAttachment);
     });
 
-    it('should throw if file size exceeds limit', async () => {
+    it('should reject upload to another user note', async () => {
       const mockFile: Express.Multer.File = {
         fieldname: 'file',
-        originalname: 'large.pdf',
+        originalname: 'test.pdf',
         encoding: '7bit',
         mimetype: 'application/pdf',
-        size: 20000000, // 20MB
+        size: 1024,
         destination: '/tmp',
-        filename: 'large.pdf',
-        path: '/tmp/large.pdf',
+        filename: 'test.pdf',
+        path: '/tmp/test.pdf',
         buffer: Buffer.from('test content'),
         stream: undefined as any,
       };
 
-      mockConfigService.get.mockReturnValue(10485760); // 10MB
+      mockPrisma.note.findFirst.mockResolvedValue(null);
 
-      await expect(service.upload('user-id', mockFile)).rejects.toThrow('文件大小超过限制');
+      await expect(
+        service.upload('user-id', mockFile, 'foreign-note'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -149,7 +144,7 @@ describe('AttachmentService', () => {
       mockPrisma.attachment.delete.mockResolvedValue({ id: '1' });
 
       const result = await service.remove('user-id', '1');
-      expect(result).toEqual({ message: '文件已删除' });
+      expect(result).toEqual({ message: 'Attachment deleted' });
     });
   });
 });

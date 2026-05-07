@@ -1,17 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { QueryNotesDto } from './dto/query-notes.dto';
 
+const NOTE_LIST_PREVIEW_LENGTH = 240;
+
 @Injectable()
 export class NoteService {
   constructor(private prisma: PrismaService) {}
 
-  // 创建笔记
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { title, content, folderId, tags } = createNoteDto;
+
+    await this.validateFolderAccess(userId, folderId);
+    await this.validateTagAccess(userId, tags);
 
     const note = await this.prisma.note.create({
       data: {
@@ -45,11 +52,10 @@ export class NoteService {
     return note;
   }
 
-  // 获取笔记列表
   async findAll(userId: string, query: QueryNotesDto) {
     const { folderId, tagId, keyword, isPinned, page = 1, limit = 20 } = query;
 
-    const where: Prisma.NoteWhereInput = {
+    const where: any = {
       userId,
       isDeleted: false,
     };
@@ -76,9 +82,37 @@ export class NoteService {
     const [notes, total] = await Promise.all([
       this.prisma.note.findMany({
         where,
-        include: {
-          folder: true,
-          tags: { include: { tag: true } },
+        select: {
+          id: true,
+          userId: true,
+          folderId: true,
+          title: true,
+          content: true,
+          isPinned: true,
+          isDeleted: true,
+          deletedAt: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true,
+          folder: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          tags: {
+            select: {
+              noteId: true,
+              tagId: true,
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
         skip: (page - 1) * limit,
@@ -88,7 +122,7 @@ export class NoteService {
     ]);
 
     return {
-      notes,
+      notes: notes.map((note) => this.toNoteListItem(note)),
       pagination: {
         page,
         limit,
@@ -98,91 +132,78 @@ export class NoteService {
     };
   }
 
-  // 获取笔记详情
   async findOne(userId: string, noteId: string) {
     const note = await this.prisma.note.findFirst({
       where: { id: noteId, userId, isDeleted: false },
       include: {
         folder: true,
         tags: { include: { tag: true } },
-        versions: {
-          orderBy: { version: 'desc' },
-          take: 10,
-        },
-        attachments: true,
       },
     });
 
     if (!note) {
-      throw new NotFoundException('笔记不存在');
+      throw new NotFoundException('Note not found');
     }
 
     return note;
   }
 
-  // 更新笔记（原子操作，使用事务防止竞态条件）
   async update(userId: string, noteId: string, updateNoteDto: UpdateNoteDto) {
     const { title, content, folderId, isPinned, tags } = updateNoteDto;
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 获取当前笔记
-      const currentNote = await tx.note.findFirst({
-        where: { id: noteId, userId, isDeleted: false },
-      });
-
-      if (!currentNote) {
-        throw new NotFoundException('笔记不存在');
-      }
-
-      const newVersion = currentNote.version + 1;
-
-      // 更新笔记并创建新版本（在同一事务中）
-      const note = await tx.note.update({
-        where: { id: noteId },
-        data: {
-          title,
-          content,
-          folderId,
-          isPinned,
-          version: newVersion,
-          tags: tags
-            ? {
-                deleteMany: {},
-                create: tags.map((tagId) => ({
-                  tag: { connect: { id: tagId } },
-                })),
-              }
-            : undefined,
-        },
-        include: {
-          folder: true,
-          tags: { include: { tag: true } },
-        },
-      });
-
-      await tx.noteVersion.create({
-        data: {
-          noteId: note.id,
-          version: newVersion,
-          title: title || currentNote.title,
-          content: content || currentNote.content,
-        },
-      });
-
-      return note;
+    const currentNote = await this.prisma.note.findFirst({
+      where: { id: noteId, userId, isDeleted: false },
     });
 
-    return result;
+    if (!currentNote) {
+      throw new NotFoundException('Note not found');
+    }
+
+    await this.validateFolderAccess(userId, folderId);
+    await this.validateTagAccess(userId, tags);
+
+    const note = await this.prisma.note.update({
+      where: { id: noteId },
+      data: {
+        title,
+        content,
+        folderId,
+        isPinned,
+        version: currentNote.version + 1,
+        tags: tags
+          ? {
+              deleteMany: {},
+              create: tags.map((tagId) => ({
+                tag: { connect: { id: tagId } },
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        folder: true,
+        tags: { include: { tag: true } },
+      },
+    });
+
+    await this.prisma.noteVersion.create({
+      data: {
+        noteId: note.id,
+        version: note.version,
+        title: title || currentNote.title,
+        content: content || currentNote.content,
+      },
+    });
+
+    return note;
   }
 
-  // 软删除笔记
   async remove(userId: string, noteId: string) {
     const note = await this.prisma.note.findFirst({
       where: { id: noteId, userId, isDeleted: false },
     });
 
     if (!note) {
-      throw new NotFoundException('笔记不存在');
+      throw new NotFoundException('Note not found');
     }
 
     await this.prisma.note.update({
@@ -193,17 +214,16 @@ export class NoteService {
       },
     });
 
-    return { message: '笔记已删除' };
+    return { message: 'Note deleted' };
   }
 
-  // 恢复已删除笔记
   async restore(userId: string, noteId: string) {
     const note = await this.prisma.note.findFirst({
       where: { id: noteId, userId, isDeleted: true },
     });
 
     if (!note) {
-      throw new NotFoundException('笔记不存在或未删除');
+      throw new Error('Note not found or not deleted');
     }
 
     const restoredNote = await this.prisma.note.update({
@@ -217,14 +237,13 @@ export class NoteService {
     return restoredNote;
   }
 
-  // 获取历史版本
   async getVersions(userId: string, noteId: string) {
     const note = await this.prisma.note.findFirst({
       where: { id: noteId, userId },
     });
 
     if (!note) {
-      throw new NotFoundException('笔记不存在');
+      throw new NotFoundException('Note not found or access denied');
     }
 
     const versions = await this.prisma.noteVersion.findMany({
@@ -236,28 +255,101 @@ export class NoteService {
     return versions;
   }
 
-  // 获取回收站笔记列表（带分页）
-  async getTrash(userId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-
-    const [notes, total] = await Promise.all([
-      this.prisma.note.findMany({
-        where: { userId, isDeleted: true },
-        orderBy: { deletedAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.note.count({ where: { userId, isDeleted: true } }),
-    ]);
-
-    return {
-      notes,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+  async getTrash(userId: string) {
+    const notes = await this.prisma.note.findMany({
+      where: { userId, isDeleted: true },
+      orderBy: { deletedAt: 'desc' },
+      select: {
+        id: true,
+        userId: true,
+        folderId: true,
+        title: true,
+        content: true,
+        isPinned: true,
+        isDeleted: true,
+        deletedAt: true,
+        version: true,
+        createdAt: true,
+        updatedAt: true,
+        folder: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        tags: {
+          select: {
+            noteId: true,
+            tagId: true,
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
+    });
+
+    return notes.map((note) => this.toNoteListItem(note));
+  }
+
+  private toNoteListItem(note: any) {
+    return {
+      ...note,
+      content: this.buildContentPreview(note.content),
     };
+  }
+
+  private buildContentPreview(content?: string | null) {
+    if (!content) {
+      return '';
+    }
+
+    const plainText = content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (plainText.length <= NOTE_LIST_PREVIEW_LENGTH) {
+      return plainText;
+    }
+
+    return `${plainText.slice(0, NOTE_LIST_PREVIEW_LENGTH)}...`;
+  }
+
+  private async validateFolderAccess(userId: string, folderId?: string) {
+    if (!folderId) {
+      return;
+    }
+
+    const folder = await this.prisma.folder.findFirst({
+      where: { id: folderId, userId },
+      select: { id: true },
+    });
+
+    if (!folder) {
+      throw new ForbiddenException('Folder not found or access denied');
+    }
+  }
+
+  private async validateTagAccess(userId: string, tagIds?: string[]) {
+    if (!tagIds?.length) {
+      return;
+    }
+
+    const tags = await this.prisma.tag.findMany({
+      where: {
+        id: { in: tagIds },
+        userId,
+      },
+      select: { id: true },
+    });
+
+    if (tags.length !== new Set(tagIds).size) {
+      throw new ForbiddenException('One or more tags are invalid for this user');
+    }
   }
 }

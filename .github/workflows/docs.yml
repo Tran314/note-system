@@ -31,7 +31,7 @@ jobs:
           cp README.md docs/_sidebar.md
           cp ARCHITECTURE.md docs/architecture.md
           cp BUILD_PLAN.md docs/build-plan.md
-          echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nebula Docs</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify/lib/themes/vue.css"></head><body><div id="app"></div><script>window.$docsify={loadSidebar:"_sidebar.md",name:"Nebula",repo:"TODO/note-system"};</script><script src="https://cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script></body></html>' > docs/index.html
+          echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Note System Docs</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify/lib/themes/vue.css"></head><body><div id="app"></div><script>window.$docsify={loadSidebar:"_sidebar.md",name:"Note System",repo:"your-github-username/note-system"};</script><script src="https://cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script></body></html>' > docs/index.html
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

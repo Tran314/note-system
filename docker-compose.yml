@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # PostgreSQL Database
   postgres:
@@ -5,50 +7,34 @@ services:
     container_name: note-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-noteuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-notepass123}
+      POSTGRES_DB: ${DB_NAME:-notesystem}
     volumes:
-      - postgres_data:/var/libgresql/data
-    # ports:
-    #   - "${DB_PORT:-5432}:5432"
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-noteuser}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: note-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass123}
     volumes:
       - redis_data:/data
-    # ports:
-    #   - "${REDIS_PORT:-6379}:6379"
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispass123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
 
   # Backend API
   backend:
@@ -63,11 +49,11 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
+      DATABASE_URL: postgresql://${DB_USER:-noteuser}:${DB_PASSWORD:-notepass123}@postgres:5432/${DB_NAME:-notesystem}?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-1800}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-604800}
       NODE_ENV: production
@@ -81,14 +67,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-        reservations:
-          cpus: '1'
-          memory: 512M
 
   # Frontend Web
   frontend:
@@ -102,14 +80,6 @@ services:
         condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-3000}:80"
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
 
 volumes:
   postgres_data:

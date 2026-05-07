@@ -7,7 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-export interface ApiResponse<T> {
+export interface Response<T> {
   statusCode: number;
   message: string;
   data: T;
@@ -16,7 +16,7 @@ export interface ApiResponse<T> {
 
 @Injectable()
 export class TransformInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T>>
+  implements NestInterceptor<T, Response<T>>
 {
   intercept(
     context: ExecutionContext,

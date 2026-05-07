@@ -1,34 +1,41 @@
-import { IsOptional, IsString, IsBoolean, IsNumber, Min, Max, IsIn } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateSettingsDto {
-  @ApiPropertyOptional({ description: '主题', enum: ['light', 'dark'] })
+  @ApiPropertyOptional({ example: 'light', description: 'Theme' })
   @IsOptional()
-  @IsString()
-  @IsIn(['light', 'dark'], { message: '主题只能是 light 或 dark' })
+  @IsIn(['light', 'dark'])
   theme?: string;
 
-  @ApiPropertyOptional({ description: '编辑器字体大小' })
+  @ApiPropertyOptional({ example: 16, description: 'Editor font size' })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(12)
   @Max(32)
   editorFontSize?: number;
 
-  @ApiPropertyOptional({ description: '是否启用自动保存' })
+  @ApiPropertyOptional({ example: true, description: 'Auto save enabled' })
   @IsOptional()
   @IsBoolean()
   autoSave?: boolean;
 
-  @ApiPropertyOptional({ description: '自动保存间隔（秒）' })
+  @ApiPropertyOptional({ example: 30, description: 'Auto save interval in seconds' })
   @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(300)
+  @IsInt()
+  @Min(5)
+  @Max(3600)
   autoSaveInterval?: number;
 
-  @ApiPropertyOptional({ description: '默认文件夹ID' })
+  @ApiPropertyOptional({ example: 'uuid-folder-id', description: 'Default folder id' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   defaultFolderId?: string;
 }

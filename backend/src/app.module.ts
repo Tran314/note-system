@@ -1,7 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './database/prisma.module';
 import { RedisModule } from './database/redis.module';
@@ -16,11 +16,6 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { RolesGuard } from './common/guards/roles.guard';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { validationSchema } from './config/env.validation';
 
 @Module({
   imports: [
@@ -28,10 +23,6 @@ import { validationSchema } from './config/env.validation';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../.env'],
-      validationSchema,
-      validationOptions: {
-        abortEarly: false,
-      },
     }),
 
     // JWT 模块
@@ -46,17 +37,13 @@ import { validationSchema } from './config/env.validation';
       inject: [ConfigService],
     }),
 
-    // 限流模块 - 通过环境变量配置
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => [
-        {
-          ttl: configService.get<number>('THROTTLE_TTL', 60000), // 默认 1 分钟
-          limit: configService.get<number>('THROTTLE_LIMIT', 100), // 默认每分钟 100 次请求
-        },
-      ],
-      inject: [ConfigService],
-    }),
+    // 限流模块
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 分钟
+        limit: 100, // 每分钟 100 次请求
+      },
+    ]),
 
     // 数据库模块
     PrismaModule,
@@ -83,26 +70,6 @@ import { validationSchema } from './config/env.validation';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    },
-    // 全局角色守卫
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-    // 全局异常过滤器
-    {
-      provide: APP_FILTER,
-      useClass: HttpExceptionFilter,
-    },
-    // 全局 Prisma 异常过滤器
-    {
-      provide: APP_FILTER,
-      useClass: PrismaExceptionFilter,
-    },
-    // 全局响应转换拦截器
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: TransformInterceptor,
     },
   ],
 })

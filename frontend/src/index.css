@@ -2,63 +2,210 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 自定义样式 */
+/* Claude Code 风格 - 简洁深色主题 */
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #242424;
+  --bg-tertiary: #2e2e2e;
+  --bg-hover: #363636;
+
+  --text-primary: #ffffff;
+  --text-secondary: #b4b4b4;
+  --text-tertiary: #888888;
+
+  --border-primary: #3a3a3a;
+  --border-secondary: #4a4a4a;
+
+  --accent-primary: #10a37f;
+  --accent-secondary: #1a7f64;
+  --accent-hover: #0d8a6a;
+
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --success: #22c55e;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* 强制深色主题 */
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  line-height: 1.6;
+  antialiased;
+}
+
 @layer components {
   /* 按钮样式 */
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply rounded-lg px-4 py-2 font-medium transition-colors;
+    background: var(--accent-primary);
+    color: var(--text-primary);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply rounded-lg px-4 py-2 font-medium transition-colors;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-hover);
+  }
+
+  .btn-ghost {
+    @apply rounded-lg px-4 py-2 font-medium transition-colors;
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .btn-ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply rounded-lg px-4 py-2 font-medium transition-colors;
+    background: var(--error);
+    color: var(--text-primary);
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
   }
 
   /* 输入框样式 */
   .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    @apply w-full rounded-lg px-3 py-2 transition-colors outline-none;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+  }
+
+  .input-field:hover {
+    border-color: var(--border-secondary);
+  }
+
+  .input-field:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+  }
+
+  .input-field::placeholder {
+    color: var(--text-tertiary);
   }
 
   /* 卡片样式 */
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply rounded-lg p-6;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
   }
 
   /* 侧边栏样式 */
   .sidebar {
-    @apply bg-gray-100 h-full w-64 border-r border-gray-200;
+    @apply h-full overflow-y-auto;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
   }
 
-  /* 笔记列表项 */
+  /* 笔记项样式 */
   .note-item {
-    @apply p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors;
+    @apply cursor-pointer rounded-lg p-3 transition-colors;
+    border: 1px solid transparent;
+  }
+
+  .note-item:hover {
+    background: var(--bg-hover);
   }
 
   .note-item-active {
-    @apply bg-blue-50 border-l-4 border-blue-600;
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
   }
 }
 
-/* TipTap 编辑器样式 */
+/* 页面过渡动画 */
+.page-enter {
+  animation: page-fade-in 200ms ease-out;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ProseMirror 编辑器样式 */
 .ProseMirror {
   min-height: 300px;
   padding: 1rem;
   outline: none;
+  color: var(--text-primary);
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #adb5bd;
+  color: var(--text-tertiary);
   pointer-events: none;
   height: 0;
 }
 
 .ProseMirror:focus {
   outline: none;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border-secondary);
+  padding-left: 1rem;
+  color: var(--text-secondary);
+}
+
+.ProseMirror code {
+  background: var(--bg-tertiary);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.ProseMirror pre {
+  background: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background: transparent;
+  padding: 0;
 }
 
 /* 滚动条样式 */
@@ -68,24 +215,51 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--border-secondary);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--text-tertiary);
 }
 
-/* 减少动画支持 */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+/* 选择文本样式 */
+::selection {
+  background: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+/* 链接样式 */
+a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* 分隔线 */
+hr {
+  border-color: var(--border-primary);
+}
+
+/* 表格样式 */
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid var(--border-primary);
+  padding: 0.5rem 1rem;
+}
+
+th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
 }

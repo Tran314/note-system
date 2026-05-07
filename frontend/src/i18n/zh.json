@@ -13,22 +13,7 @@
     "confirm": "确认",
     "success": "成功",
     "error": "错误",
-    "warning": "警告",
-    "toggleDark": "切换暗色模式",
-    "toggleLight": "切换亮色模式",
-    "notifications": "通知",
-    "settings": "设置",
-    "user": "用户",
-    "logout": "退出登录",
-    "back": "返回",
-    "unsaved": "未保存",
-    "saved": "已保存",
-    "titlePlaceholder": "笔记标题",
-    "addLink": "添加链接",
-    "addImage": "添加图片",
-    "pasteImageHint": "或直接粘贴图片（Ctrl/Cmd + V）",
-    "filter": "筛选",
-    "rename": "重命名"
+    "warning": "警告"
   },
   "auth": {
     "login": "登录",
@@ -50,10 +35,7 @@
     "invalidEmail": "邮箱格式不正确",
     "passwordTooShort": "密码至少6位",
     "passwordMismatch": "两次密码不一致",
-    "emailExists": "该邮箱已被注册",
-    "nicknameRequired": "昵称不能为空",
-    "nicknameMax": "昵称最多50位",
-    "invalidUrl": "请输入有效的 URL"
+    "emailExists": "该邮箱已被注册"
   },
   "notes": {
     "allNotes": "所有笔记",
@@ -150,8 +132,7 @@
     "lineHeight": "行高",
     "autoSave": "自动保存",
     "autoSaveEnabled": "启用自动保存",
-    "autoSaveDelay": "自动保存延迟(秒)",
-    "avatarHelperText": "支持 jpg/png 格式的图片链接"
+    "autoSaveDelay": "自动保存延迟(秒)"
   },
   "export": {
     "export": "导出",

@@ -4,11 +4,17 @@ import Header from './Header';
 
 function Layout() {
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen overflow-hidden bg-[#1a1a1a]">
+      {/* 侧边栏 */}
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+
+      {/* 主内容区 */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* 头部 */}
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-100 dark:bg-gray-900">
+
+        {/* 内容区域 */}
+        <main className="flex-1 overflow-y-auto bg-[#242424] p-4">
           <Outlet />
         </main>
       </div>

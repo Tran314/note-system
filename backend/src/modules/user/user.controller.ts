@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Put,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Put, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -12,20 +6,20 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CurrentUser } from '../../common';
 
-@ApiTags('用户')
+@ApiTags('Users')
 @Controller('users')
 @ApiBearerAuth()
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Get('profile')
-  @ApiOperation({ summary: '获取用户资料' })
+  @ApiOperation({ summary: 'Get user profile' })
   async getProfile(@CurrentUser('sub') userId: string) {
     return this.userService.getProfile(userId);
   }
 
   @Put('profile')
-  @ApiOperation({ summary: '更新用户资料' })
+  @ApiOperation({ summary: 'Update user profile' })
   async updateProfile(
     @CurrentUser('sub') userId: string,
     @Body() updateProfileDto: UpdateProfileDto,
@@ -34,7 +28,7 @@ export class UserController {
   }
 
   @Put('password')
-  @ApiOperation({ summary: '修改密码' })
+  @ApiOperation({ summary: 'Update user password' })
   async updatePassword(
     @CurrentUser('sub') userId: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
@@ -43,7 +37,7 @@ export class UserController {
   }
 
   @Put('settings')
-  @ApiOperation({ summary: '更新用户设置' })
+  @ApiOperation({ summary: 'Update user settings' })
   async updateSettings(
     @CurrentUser('sub') userId: string,
     @Body() settings: UpdateSettingsDto,

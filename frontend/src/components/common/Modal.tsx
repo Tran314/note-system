@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useCallback } from 'react';
+import { ReactNode } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -15,95 +15,21 @@ const widths = {
   lg: 'max-w-lg',
 };
 
-export function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  footer,
-  width = 'md' 
-}: ModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousElementRef = useRef<HTMLElement | null>(null);
-
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  }, [onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      previousElementRef.current = document.activeElement as HTMLElement;
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Focus trap
-      const modal = modalRef.current;
-      if (modal) {
-        const focusableElements = modal.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        const handleTabKey = (e: KeyboardEvent) => {
-          if (e.key !== 'Tab') return;
-
-          if (e.shiftKey) {
-            if (document.activeElement === firstElement) {
-              e.preventDefault();
-              lastElement?.focus();
-            }
-          } else {
-            if (document.activeElement === lastElement) {
-              e.preventDefault();
-              firstElement?.focus();
-            }
-          }
-        };
-
-        modal.addEventListener('keydown', handleTabKey);
-        firstElement?.focus();
-
-        return () => {
-          modal.removeEventListener('keydown', handleTabKey);
-          document.removeEventListener('keydown', handleKeyDown);
-          previousElementRef.current?.focus();
-        };
-      }
-    }
-  }, [isOpen, handleKeyDown]);
-
+export function Modal({ isOpen, onClose, title, children, footer, width = 'md' }: ModalProps) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div 
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-        data-testid="modal-overlay"
-        aria-hidden="true"
-      />
-      
-      <div 
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
-        className={`relative bg-white rounded-lg shadow-xl ${widths[width]} w-full mx-4`}
-      >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative mx-4 w-full rounded-lg border border-[#3a3a3a] bg-[#242424] shadow-xl ${widths[width]}`}>
         {title && (
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 id="modal-title" className="text-lg font-semibold">{title}</h3>
+          <div className="border-b border-[#3a3a3a] px-4 py-3">
+            <h3 className="text-lg font-semibold">{title}</h3>
           </div>
         )}
-        
-        <div className="px-6 py-4">
-          {children}
-        </div>
-        
+        <div className="px-4 py-4">{children}</div>
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+          <div className="flex justify-end gap-2 border-t border-[#3a3a3a] px-4 py-3">
             {footer}
           </div>
         )}

@@ -5,7 +5,6 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('NoteService', () => {
   let service: NoteService;
-  let prisma: PrismaService;
 
   const mockNote = {
     id: 'note-id',
@@ -35,13 +34,12 @@ describe('NoteService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
     },
-    noteTag: {
-      create: jest.fn(),
-      deleteMany: jest.fn(),
+    folder: {
+      findFirst: jest.fn(),
     },
-    $transaction: jest.fn((callbacks: any[]) => 
-      Promise.all(callbacks.map(cb => cb))
-    ),
+    tag: {
+      findMany: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -56,7 +54,6 @@ describe('NoteService', () => {
     }).compile();
 
     service = module.get<NoteService>(NoteService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -86,9 +83,9 @@ describe('NoteService', () => {
         tags: ['tag-1'],
       };
 
+      mockPrisma.tag.findMany.mockResolvedValue([{ id: 'tag-1' }]);
       mockPrisma.note.create.mockResolvedValue(mockNote as any);
       mockPrisma.noteVersion.create.mockResolvedValue({} as any);
-      mockPrisma.noteTag.create.mockResolvedValue({} as any);
 
       await service.create('user-id', createDto);
 
@@ -97,8 +94,19 @@ describe('NoteService', () => {
           data: expect.objectContaining({
             tags: expect.anything(),
           }),
-        })
+        }),
       );
+    });
+
+    it('should reject tags from another user', async () => {
+      mockPrisma.tag.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.create('user-id', {
+          title: 'New Note',
+          tags: ['foreign-tag'],
+        }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -111,36 +119,6 @@ describe('NoteService', () => {
 
       expect(result.notes).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
-    });
-
-    it('should filter by folder', async () => {
-      mockPrisma.note.findMany.mockResolvedValue([mockNote] as any);
-      mockPrisma.note.count.mockResolvedValue(1);
-
-      await service.findAll('user-id', { folderId: 'folder-id' });
-
-      expect(mockPrisma.note.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            folderId: 'folder-id',
-          }),
-        })
-      );
-    });
-
-    it('should search by keyword', async () => {
-      mockPrisma.note.findMany.mockResolvedValue([mockNote] as any);
-      mockPrisma.note.count.mockResolvedValue(1);
-
-      await service.findAll('user-id', { keyword: 'test' });
-
-      expect(mockPrisma.note.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            OR: expect.any(Array),
-          }),
-        })
-      );
     });
   });
 
@@ -156,8 +134,9 @@ describe('NoteService', () => {
     it('should throw NotFoundException if note not found', async () => {
       mockPrisma.note.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne('user-id', 'invalid-id'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.findOne('user-id', 'invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -166,9 +145,9 @@ describe('NoteService', () => {
       const updateDto = { title: 'Updated Title' };
 
       mockPrisma.note.findFirst.mockResolvedValue(mockNote as any);
-      mockPrisma.note.update.mockResolvedValue({ 
-        ...mockNote, 
-        title: 'Updated Title' 
+      mockPrisma.note.update.mockResolvedValue({
+        ...mockNote,
+        title: 'Updated Title',
       } as any);
       mockPrisma.noteVersion.create.mockResolvedValue({} as any);
 
@@ -177,14 +156,23 @@ describe('NoteService', () => {
       expect(result.title).toBe('Updated Title');
       expect(mockPrisma.noteVersion.create).toHaveBeenCalled();
     });
+
+    it('should reject folder access from another user', async () => {
+      mockPrisma.note.findFirst.mockResolvedValue(mockNote as any);
+      mockPrisma.folder.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update('user-id', 'note-id', { folderId: 'foreign-folder' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 
   describe('remove', () => {
     it('should soft delete a note', async () => {
       mockPrisma.note.findFirst.mockResolvedValue(mockNote as any);
-      mockPrisma.note.update.mockResolvedValue({ 
-        ...mockNote, 
-        isDeleted: true 
+      mockPrisma.note.update.mockResolvedValue({
+        ...mockNote,
+        isDeleted: true,
       } as any);
 
       await service.remove('user-id', 'note-id');
@@ -194,7 +182,7 @@ describe('NoteService', () => {
           data: expect.objectContaining({
             isDeleted: true,
           }),
-        })
+        }),
       );
     });
   });

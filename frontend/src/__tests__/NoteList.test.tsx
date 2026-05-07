@@ -9,18 +9,22 @@ vi.mock('../store/note.store', () => ({
     notes: [],
     loading: false,
     fetchNotes: vi.fn(),
+    deleteNote: vi.fn(),
+    prefetchNote: vi.fn(),
   })),
 }));
 
 vi.mock('../store/folder.store', () => ({
   useFolderStore: vi.fn(() => ({
     folders: [],
+    fetchFolders: vi.fn(),
   })),
 }));
 
 vi.mock('../store/tag.store', () => ({
   useTagStore: vi.fn(() => ({
     tags: [],
+    fetchTags: vi.fn(),
   })),
 }));
 

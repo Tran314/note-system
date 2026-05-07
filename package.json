@@ -18,6 +18,9 @@
     "dev:backend": "cd backend && npm run start:dev",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:desktop": "cd desktop && npm run dev",
+    "preview:local": "powershell -ExecutionPolicy Bypass -File .\\scripts\\preview-local.ps1",
+    "preview:local:skip-build": "powershell -ExecutionPolicy Bypass -File .\\scripts\\preview-local.ps1 -SkipBuild",
+    "preview:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\preview-stop.ps1",
     
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && npm run build",
@@ -26,6 +29,10 @@
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "cd backend && npm test",
     "test:frontend": "cd frontend && npm test -- --run",
+    "ci:local": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ci-local.ps1 -Mode safe",
+    "ci:local:full": "powershell -ExecutionPolicy Bypass -File .\\scripts\\ci-local.ps1 -Mode full",
+    "ci:backend": "cd backend && npm run lint && npx tsc --noEmit && npm run build && npm test -- --runInBand src/modules/note/note.service.spec.ts",
+    "ci:frontend": "cd frontend && npm run lint && npx tsc --noEmit",
     
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",

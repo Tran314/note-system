@@ -9,6 +9,7 @@ describe('TrashService', () => {
   const mockPrisma = {
     note: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
@@ -52,7 +53,13 @@ describe('TrashService', () => {
         deletedAt: null,
       } as any);
 
-      await service.restoreNote('1');
+      mockPrisma.note.findFirst.mockResolvedValue({
+        id: '1',
+        userId: 'user-id',
+        isDeleted: true,
+      } as any);
+
+      await service.restoreNote('user-id', '1');
 
       expect(mockPrisma.note.update).toHaveBeenCalled();
     });

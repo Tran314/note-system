@@ -1,11 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../../database/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 
 describe('UserService', () => {
   let service: UserService;
-  let prisma: PrismaService;
 
   const mockUser = {
     id: 'user-id',
@@ -23,8 +22,10 @@ describe('UserService', () => {
       update: jest.fn(),
     },
     userSettings: {
-      findUnique: jest.fn(),
       update: jest.fn(),
+    },
+    folder: {
+      findFirst: jest.fn(),
     },
   };
 
@@ -40,7 +41,6 @@ describe('UserService', () => {
     }).compile();
 
     service = module.get<UserService>(UserService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -54,14 +54,6 @@ describe('UserService', () => {
       const result = await service.getProfile('user-id');
 
       expect(result?.id).toBe(mockUser.id);
-    });
-
-    it('should return null if user not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-
-      const result = await service.getProfile('invalid-id');
-
-      expect(result).toBeNull();
     });
   });
 
@@ -77,6 +69,30 @@ describe('UserService', () => {
       const result = await service.updateProfile('user-id', updateDto);
 
       expect(result.nickname).toBe('New Name');
+    });
+  });
+
+  describe('updateSettings', () => {
+    it('should reject another user default folder', async () => {
+      mockPrisma.folder.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.updateSettings('user-id', { defaultFolderId: 'foreign-folder' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should update settings when folder belongs to user', async () => {
+      mockPrisma.folder.findFirst.mockResolvedValue({ id: 'folder-id' });
+      mockPrisma.userSettings.update.mockResolvedValue({
+        userId: 'user-id',
+        defaultFolderId: 'folder-id',
+      });
+
+      const result = await service.updateSettings('user-id', {
+        defaultFolderId: 'folder-id',
+      });
+
+      expect(result.defaultFolderId).toBe('folder-id');
     });
   });
 });

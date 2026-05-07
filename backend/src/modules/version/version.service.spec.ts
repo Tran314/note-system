@@ -7,6 +7,9 @@ describe('VersionService', () => {
   let prisma: PrismaService;
 
   const mockPrisma = {
+    note: {
+      findFirst: jest.fn(),
+    },
     noteVersion: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -40,7 +43,12 @@ describe('VersionService', () => {
         { id: '1', noteId: 'note-1', content: 'v1' },
       ] as any);
 
-      const result = await service.getVersions('note-1');
+      mockPrisma.note.findFirst.mockResolvedValue({
+        id: 'note-1',
+        userId: 'user-id',
+      } as any);
+
+      const result = await service.getVersions('user-id', 'note-1');
 
       expect(result.length).toBe(1);
     });
@@ -51,9 +59,10 @@ describe('VersionService', () => {
       mockPrisma.noteVersion.findUnique.mockResolvedValue({
         id: '1',
         content: 'version content',
+        note: { userId: 'user-id' },
       } as any);
 
-      const result = await service.getVersion('1');
+      const result = await service.getVersion('user-id', '1');
 
       expect(result?.id).toBe('1');
     });

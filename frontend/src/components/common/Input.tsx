@@ -11,27 +11,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, icon, className = '', ...props }, ref: ForwardedRef<HTMLInputElement>) => {
     return (
       <div className="w-full">
-        {label && (
-          <label className="block text-sm font-medium mb-1">{label}</label>
-        )}
+        {label && <label className="mb-1.5 block text-sm font-medium text-[#b4b4b4]">{label}</label>}
         <div className="relative">
-          {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {icon}
-            </div>
-          )}
+          {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]">{icon}</div>}
           <input
             ref={ref}
-            className={`input-field ${icon ? 'pl-10' : ''} ${error ? 'border-red-500 focus:ring-red-500' : ''} ${className}`}
+            className={`input-field ${icon ? 'pl-10' : ''} ${error ? 'border-[#ef4444]' : ''} ${className}`}
             {...props}
           />
         </div>
-        {error && (
-          <p className="text-red-500 text-sm mt-1">{error}</p>
-        )}
-        {helperText && !error && (
-          <p className="text-gray-500 text-sm mt-1">{helperText}</p>
-        )}
+        {error && <p className="mt-1 text-sm text-[#ef4444]">{error}</p>}
+        {helperText && !error && <p className="mt-1 text-sm text-[#888888]">{helperText}</p>}
       </div>
     );
   }

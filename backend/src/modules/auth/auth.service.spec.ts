@@ -4,16 +4,12 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { RedisService } from '../../database/redis.service';
 import * as bcrypt from 'bcrypt';
 
-// Mock bcrypt
 jest.mock('bcrypt');
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: PrismaService;
-  let redis: RedisService;
 
   const mockPrisma = {
     user: {
@@ -23,16 +19,6 @@ describe('AuthService', () => {
     userSettings: {
       create: jest.fn(),
     },
-    refreshToken: {
-      create: jest.fn(),
-      updateMany: jest.fn(),
-    },
-  };
-
-  const mockRedis = {
-    addToBlacklist: jest.fn(),
-    isBlacklisted: jest.fn(),
-    clearUserSession: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -42,10 +28,6 @@ describe('AuthService', () => {
         {
           provide: PrismaService,
           useValue: mockPrisma,
-        },
-        {
-          provide: RedisService,
-          useValue: mockRedis,
         },
         {
           provide: JwtService,
@@ -59,8 +41,7 @@ describe('AuthService', () => {
             get: jest.fn((key: string) => {
               const config: Record<string, any> = {
                 JWT_SECRET: 'test-secret',
-                JWT_ACCESS_EXPIRES_IN: 1800,
-                JWT_REFRESH_EXPIRES_IN: 604800,
+                JWT_ACCESS_EXPIRES_IN: 2592000,
               };
               return config[key];
             }),
@@ -70,8 +51,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prisma = module.get<PrismaService>(PrismaService);
-    redis = module.get<RedisService>(RedisService);
   });
 
   afterEach(() => {
@@ -104,12 +83,12 @@ describe('AuthService', () => {
         createdAt: new Date(),
       });
       mockPrisma.userSettings.create.mockResolvedValue({});
-      mockPrisma.refreshToken.create.mockResolvedValue({ jti: 'test-jti' });
 
       const result = await service.register(registerDto);
 
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('mock-access-token');
+      expect(result).not.toHaveProperty('refreshToken');
       expect(mockPrisma.user.create).toHaveBeenCalled();
     });
   });
@@ -145,22 +124,18 @@ describe('AuthService', () => {
         nickname: 'Test',
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.refreshToken.create.mockResolvedValue({ jti: 'test-jti' });
 
       const result = await service.login(loginDto);
 
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('mock-access-token');
+      expect(result).not.toHaveProperty('refreshToken');
     });
   });
 
   describe('logout', () => {
-    it('should call addToBlacklist and clearUserSession', async () => {
-      await service.logout('user-id', 'jti');
-
-      expect(mockRedis.addToBlacklist).toHaveBeenCalled();
-      expect(mockRedis.clearUserSession).toHaveBeenCalled();
-      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalled();
+    it('should return success message without server-side token revocation', async () => {
+      await expect(service.logout()).resolves.toEqual({ message: '退出成功' });
     });
   });
 });
