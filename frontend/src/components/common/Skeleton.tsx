@@ -77,8 +77,8 @@ export function GenericSkeleton() {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="animate-pulse">
-        <div className="h-8 w-64 bg-[#363636] rounded-lg mb-4" />
-        <div className="h-4 w-48 bg-[#363636] rounded-lg" />
+        <Skeleton className="h-8 w-64 mb-4" />
+        <Skeleton className="h-4 w-48" />
       </div>
     </div>
   );

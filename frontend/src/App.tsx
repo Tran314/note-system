@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/error/ErrorBoundary';
-import { Loading } from './components/common/Loading';
 import { GenericSkeleton } from './components/common/Skeleton';
 import { getStoredAccessToken } from './utils/auth-storage';
 
