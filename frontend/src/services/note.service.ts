@@ -1,80 +1,145 @@
-import { api } from './api';
-import { Note, BatchUpdateItem, NoteQueryResponse, ApiResponse, PaginatedResponse, NoteVersion } from '../types/api.types';
+import { cosService } from './cos.service';
+import { cacheService } from './cache.service';
+import { generateUUID } from '../utils/uuid';
 
-export const noteService = {
-  getNotes: async (params?: {
-    folderId?: string;
-    tagId?: string;
-    keyword?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<NoteQueryResponse>> => {
-    const response = await api.get('/notes', { params });
-    return response.data;
-  },
+export interface Note {
+  id: string;
+  userId: string;
+  folderId: string | null;
+  title: string;
+  content: string | null;
+  isPinned: boolean;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+}
 
-  getNotesBatch: async (ids: string[]): Promise<ApiResponse<PaginatedResponse<Note>>> => {
-    const response = await api.get('/notes/batch', { params: { ids: ids.join(',') } });
-    return response.data;
-  },
+export interface NoteSummary {
+  id: string;
+  title: string;
+  updatedAt: string;
+  isPinned: boolean;
+  folderId: string | null;
+  tags: string[];
+}
 
-  getNote: async (id: string): Promise<ApiResponse<Note>> => {
-    const response = await api.get(`/notes/${id}`);
-    return response.data;
-  },
+export interface CreateNoteData {
+  title: string;
+  content?: string;
+  folderId?: string | null;
+}
 
-  createNote: async (data: { title: string; content?: string; folderId?: string; tags?: string[] }): Promise<ApiResponse<Note>> => {
-    const response = await api.post('/notes', data);
-    return response.data;
-  },
+export interface UpdateNoteData {
+  title?: string;
+  content?: string;
+  folderId?: string | null;
+  isPinned?: boolean;
+}
 
-  createNotesBatch: async (notes: Array<{ title: string; content?: string; folderId?: string; tags?: string[] }>): Promise<ApiResponse<PaginatedResponse<Note>>> => {
-    const response = await api.post('/notes/batch', { notes });
-    return response.data;
-  },
+const userId = import.meta.env.VITE_DEFAULT_USER_ID || 'test-user-001';
 
-  updateNote: async (id: string, data: { title?: string; content?: string; folderId?: string; isPinned?: boolean; tags?: string[] }): Promise<ApiResponse<Note>> => {
-    const response = await api.put(`/notes/${id}`, data);
-    return response.data;
-  },
+export class NoteService {
+  async fetchNotes(): Promise<NoteSummary[]> {
+    const index = await cacheService.getWithCache(
+      () => cosService.getJSON(`users/${userId}/notes/index.json`),
+      `notes-index-${userId}`,
+      30000
+    );
+    return index.notes || [];
+  }
 
-  updateNotesBatch: async (updates: BatchUpdateItem[]): Promise<ApiResponse<PaginatedResponse<Note>>> => {
-    const response = await api.put('/notes/batch', { updates });
-    return response.data;
-  },
+  async fetchNote(noteId: string): Promise<Note> {
+    return await cosService.getJSON(`users/${userId}/notes/${noteId}.json`);
+  }
 
-  deleteNotesBatch: async (ids: string[]): Promise<ApiResponse<{ deletedCount: number }>> => {
-    const response = await api.delete('/notes/batch', { data: { ids } });
-    return response.data;
-  },
+  async createNote(data: CreateNoteData): Promise<Note> {
+    const noteId = generateUUID();
+    const now = new Date().toISOString();
+    
+    const note: Note = {
+      id: noteId,
+      userId,
+      folderId: data.folderId || null,
+      title: data.title,
+      content: data.content || null,
+      isPinned: false,
+      isDeleted: false,
+      deletedAt: null,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      tags: [],
+    };
 
-  deleteNote: async (id: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.delete(`/notes/${id}`);
-    return response.data;
-  },
+    await cosService.putJSON(`users/${userId}/notes/${noteId}.json`, note);
+    await this.updateIndex();
 
-  restoreNote: async (id: string): Promise<ApiResponse<Note>> => {
-    const response = await api.post(`/notes/${id}/restore`);
-    return response.data;
-  },
+    return note;
+  }
 
-  restoreNotesBatch: async (ids: string[]): Promise<ApiResponse<PaginatedResponse<Note>>> => {
-    const response = await api.post('/notes/batch/restore', { ids });
-    return response.data;
-  },
+  async updateNote(noteId: string, data: UpdateNoteData): Promise<Note> {
+    const note = await this.fetchNote(noteId);
+    const updatedNote = {
+      ...note,
+      ...data,
+      updatedAt: new Date().toISOString(),
+      version: note.version + 1,
+    };
 
-  getVersions: async (id: string): Promise<ApiResponse<{ versions: NoteVersion[] }>> => {
-    const response = await api.get(`/notes/${id}/versions`);
-    return response.data;
-  },
+    await cosService.putJSON(`users/${userId}/notes/${noteId}.json`, updatedNote);
+    await this.updateIndex();
 
-  getTrash: async (): Promise<ApiResponse<PaginatedResponse<Note>>> => {
-    const response = await api.get('/notes/trash');
-    return response.data;
-  },
+    return updatedNote;
+  }
 
-  search: async (query: string, options?: { folderId?: string; tagId?: string }): Promise<ApiResponse<PaginatedResponse<Note>>> => {
-    const response = await api.get('/notes/search', { params: { q: query, ...options } });
-    return response.data;
-  },
-};
+  async deleteNote(noteId: string): Promise<void> {
+    const note = await this.fetchNote(noteId);
+    const deletedNote = {
+      ...note,
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await cosService.putJSON(`users/${userId}/notes/${noteId}.json`, deletedNote);
+    await this.updateIndex();
+  }
+
+  private async updateIndex(): Promise<void> {
+    const allNotes = await this.listAllNotes();
+    const activeNotes = allNotes.filter((n) => !n.isDeleted);
+    
+    const index = {
+      userId,
+      notes: activeNotes
+        .map((n) => ({
+          id: n.id,
+          title: n.title,
+          updatedAt: n.updatedAt,
+          isPinned: n.isPinned,
+          folderId: n.folderId,
+          tags: n.tags,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        ),
+    };
+
+    await cosService.putJSON(`users/${userId}/notes/index.json`, index);
+    cacheService.invalidate(`notes-index-${userId}`);
+  }
+
+  private async listAllNotes(): Promise<Note[]> {
+    const index = await cosService.getJSON(`users/${userId}/notes/index.json`);
+    const notes = await Promise.all(
+      (index.notes || []).map((n: NoteSummary) => this.fetchNote(n.id))
+    );
+    return notes;
+  }
+}
+
+export const noteService = new NoteService();

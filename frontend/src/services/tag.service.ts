@@ -1,39 +1,77 @@
-import { api } from './api';
-import { Tag, ApiResponse, PaginatedResponse } from '../types/api.types';
+import { cosService } from './cos.service';
+import { cacheService } from './cache.service';
+import { generateUUID } from '../utils/uuid';
 
-export const tagService = {
-  getTags: async (): Promise<ApiResponse<PaginatedResponse<Tag>>> => {
-    const response = await api.get('/tags');
-    return response.data;
-  },
+export interface Tag {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
 
-  getTag: async (id: string): Promise<ApiResponse<Tag>> => {
-    const response = await api.get(`/tags/${id}`);
-    return response.data;
-  },
+const userId = import.meta.env.VITE_DEFAULT_USER_ID || 'test-user-001';
 
-  createTag: async (data: { name: string; color?: string }): Promise<ApiResponse<Tag>> => {
-    const response = await api.post('/tags', data);
-    return response.data;
-  },
+export class TagService {
+  async fetchTags(): Promise<Tag[]> {
+    const index = await cacheService.getWithCache(
+      () => cosService.getJSON(`users/${userId}/tags/index.json`),
+      `tags-index-${userId}`,
+      60000
+    );
+    return index.tags || [];
+  }
 
-  updateTag: async (id: string, data: { name?: string; color?: string }): Promise<ApiResponse<Tag>> => {
-    const response = await api.put(`/tags/${id}`, data);
-    return response.data;
-  },
+  async createTag(data: { name: string; color?: string }): Promise<Tag> {
+    const tagId = generateUUID();
+    const tag: Tag = {
+      id: tagId,
+      userId,
+      name: data.name,
+      color: data.color || '#6B7280',
+      createdAt: new Date().toISOString(),
+    };
 
-  deleteTag: async (id: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.delete(`/tags/${id}`);
-    return response.data;
-  },
+    await this.updateTagInIndex(tag, 'add');
+    return tag;
+  }
 
-  addToNote: async (noteId: string, tagId: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.post(`/tags/note/${noteId}/${tagId}`);
-    return response.data;
-  },
+  async updateTag(tagId: string, data: { name?: string; color?: string }): Promise<Tag> {
+    const tag = await cosService.getJSON(`users/${userId}/tags/${tagId}.json`);
+    const updatedTag = { ...tag, ...data };
 
-  removeFromNote: async (noteId: string, tagId: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.delete(`/tags/note/${noteId}/${tagId}`);
-    return response.data;
-  },
-};
+    await cosService.putJSON(`users/${userId}/tags/${tagId}.json`, updatedTag);
+    await this.updateTagInIndex(updatedTag, 'update');
+
+    return updatedTag;
+  }
+
+  async deleteTag(tagId: string): Promise<void> {
+    await cosService.deleteJSON(`users/${userId}/tags/${tagId}.json`);
+    await this.updateTagInIndex({ id: tagId }, 'remove');
+  }
+
+  private async updateTagInIndex(
+    tag: Partial<Tag>,
+    action: 'add' | 'update' | 'remove'
+  ): Promise<void> {
+    const index = await cosService.getJSON(`users/${userId}/tags/index.json`);
+    let tags = index.tags || [];
+
+    if (action === 'add') {
+      tags.push(tag as Tag);
+    } else if (action === 'update') {
+      tags = tags.map((t: Tag) => (t.id === tag.id ? { ...t, ...tag } : t));
+    } else {
+      tags = tags.filter((t: Tag) => t.id !== tag.id);
+    }
+
+    await cosService.putJSON(`users/${userId}/tags/index.json`, {
+      userId,
+      tags,
+    });
+    cacheService.invalidate(`tags-index-${userId}`);
+  }
+}
+
+export const tagService = new TagService();
