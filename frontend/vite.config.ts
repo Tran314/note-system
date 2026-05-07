@@ -31,7 +31,7 @@ export default defineConfig({
           // 编辑器
           'editor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-link', '@tiptap/extension-placeholder'],
           // 工具库
-          'utils': ['axios', 'clsx', 'tailwind-merge', 'lucide-react'],
+          'utils': ['clsx', 'tailwind-merge', 'lucide-react'],
         },
       },
     },
