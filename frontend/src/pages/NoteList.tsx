@@ -7,7 +7,7 @@ import { FileText, Pin, Trash2, Clock, Folder, Tag, Plus, Search, Grid, List } f
 import { timeAgo, truncate } from '../utils/format';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
-import { Note } from '../types/note.types';
+import { NoteSummary } from '../services/note.service';
 
 const NOTE_LIST_SEARCH_KEY = 'note-list-search';
 const NOTE_LIST_VIEW_MODE_KEY = 'note-list-view-mode';
@@ -15,9 +15,9 @@ const LIST_ROW_HEIGHT = 120;
 
 const normalizeSearchText = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
 
-const buildSearchIndex = (note: Note) =>
+const buildSearchIndex = (note: NoteSummary) =>
   normalizeSearchText(
-    [note.title, note.content, note.folder?.name, ...(note.tags?.map((nt) => nt.tag?.name || '') || [])]
+    [note.title, ...(note.tags || [])]
       .filter(Boolean)
       .join(' '),
   );
@@ -40,7 +40,7 @@ const readStoredViewMode = (): 'list' | 'grid' => {
 
 function NoteList() {
   const navigate = useNavigate();
-  const { notes, loading, fetchNotes, deleteNote, prefetchNote } = useNoteStore();
+  const { notes, loading, fetchNotes, deleteNote } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { tags, fetchTags } = useTagStore();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -120,12 +120,10 @@ function NoteList() {
 
   const handleCreateNote = () => navigate('/notes/new');
 
-  const renderNoteItem = (note: Note, className = '') => (
+  const renderNoteItem = (note: NoteSummary, className = '') => (
     <div
       key={note.id}
       onClick={() => navigate(`/notes/${note.id}`)}
-      onMouseEnter={() => void prefetchNote(note.id)}
-      onFocus={() => void prefetchNote(note.id)}
       className={`note-item group ${className}`}
     >
       {/* 标题行 */}
@@ -141,34 +139,29 @@ function NoteList() {
         </div>
       </div>
 
-      {/* 内容预览 */}
-      <p className="mb-3 line-clamp-2 text-sm text-[#888888]">
-        {truncate(note.content?.replace(/<[^>]*>/g, '') || '无内容', 100)}
-      </p>
-
       {/* 元信息 */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-[#888888]">
         <span className="flex items-center gap-1">
           <Clock size={12} />
           {timeAgo(note.updatedAt)}
         </span>
-        {note.folder && (
-          <button onClick={(e) => { e.stopPropagation(); setSelectedFolder(note.folder!.id); }} className="flex items-center gap-1 hover:text-[#10a37f]">
+        {note.folderId && (
+          <button onClick={(e) => { e.stopPropagation(); setSelectedFolder(note.folderId); }} className="flex items-center gap-1 hover:text-[#10a37f]">
             <Folder size={12} />
-            {note.folder.name}
+            {folders.find(f => f.id === note.folderId)?.name}
           </button>
         )}
         {note.tags && note.tags.length > 0 && (
           <div className="flex items-center gap-1">
             <Tag size={12} />
-            {note.tags.slice(0, 3).map((nt) => (
+            {note.tags.slice(0, 3).map((tagId) => (
               <button
-                key={nt.tagId}
-                onClick={(e) => { e.stopPropagation(); setSelectedTag(nt.tagId); }}
+                key={tagId}
+                onClick={(e) => { e.stopPropagation(); setSelectedTag(tagId); }}
                 className="rounded px-1.5 py-0.5 text-white transition-opacity hover:opacity-80"
-                style={{ backgroundColor: nt.tag?.color || '#6B7280' }}
+                style={{ backgroundColor: tags.find(t => t.id === tagId)?.color || '#6B7280' }}
               >
-                {nt.tag?.name}
+                {tags.find(t => t.id === tagId)?.name}
               </button>
             ))}
             {note.tags.length > 3 && <span className="text-[#888888]">+{note.tags.length - 3}</span>}

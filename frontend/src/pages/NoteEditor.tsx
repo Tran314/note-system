@@ -26,14 +26,12 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { noteService } from '../services/note.service';
-import { attachmentService } from '../services/attachment.service';
 import { Attachment, NoteVersion } from '../types/note.types';
 
 function NoteEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { notes, currentNote, fetchNote, prefetchNote, createNote, updateNote, loading } =
+  const { notes, currentNote, fetchNote, createNote, updateNote, loading } =
     useNoteStore();
 
   const [title, setTitle] = useState('');
@@ -48,8 +46,6 @@ function NoteEditor() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [versionsLoaded, setVersionsLoaded] = useState(false);
   const [attachmentsLoaded, setAttachmentsLoaded] = useState(false);
-  const [versionsLoading, setVersionsLoading] = useState(false);
-  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedTitleRef = useRef('');
   const lastSavedContentRef = useRef('');

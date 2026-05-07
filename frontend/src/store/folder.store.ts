@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { folderService, Folder, FolderTree } from '../services/folder.service';
+import { folderService, FolderTree } from '../services/folder.service';
 
 interface FolderState {
   folders: FolderTree[];

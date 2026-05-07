@@ -13,6 +13,13 @@ export interface Folder {
   updatedAt: string;
 }
 
+export interface FolderTree {
+  id: string;
+  name: string;
+  parentId: string | null;
+  children: FolderTree[];
+}
+
 export class FolderService {
   async getFolders(): Promise<Folder[]> {
     return await localDb.folders.where('userId').equals(userId).toArray();

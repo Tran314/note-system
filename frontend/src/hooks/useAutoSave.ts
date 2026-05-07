@@ -20,7 +20,7 @@ export function useAutoSave({ noteId, delay = 2000 }: UseAutoSaveOptions) {
     try {
       await updateNote(noteId, {
         title: currentNote.title,
-        content: currentNote.content,
+        content: currentNote.content ?? undefined,
       });
       return true;
     } catch (error) {
