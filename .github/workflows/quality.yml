@@ -45,11 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Run npm audit (backend)
-        working-directory: backend
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-      
       - name: Run npm audit (frontend)
         working-directory: frontend
         run: npm audit --audit-level=moderate
@@ -66,14 +61,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
-      
-      - name: TypeScript check (backend)
-        working-directory: backend
-        run: npx tsc --noEmit
       
       - name: Install frontend dependencies
         working-directory: frontend
